@@ -18,9 +18,9 @@ const { Chess } = require('chess.js');
 // app.get('/', (req, res) => {
 // 	res.sendFile(__dirname + '/index.html');
 // });
-app.use(express.static(__dirname + '/client/build'));
+app.use(express.static(__dirname + '/build'));
 app.get('*', (req, res) => {
-	res.sendFile(__dirname + '/client/build/index.html');
+	res.sendFile(__dirname + '/build/index.html');
 });
 
 server.listen(3000, () => {
