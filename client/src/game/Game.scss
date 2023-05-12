@@ -1,0 +1,200 @@
+$board-size: 640px;
+
+#game {
+	background-color: gray;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	#main {
+		width: max-content;
+		height: max-content;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.side {
+		height: 100%;
+		width: 300px;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-content: center;
+		// align-items: center;
+	}
+
+	.side > img {
+		width: 64px;
+		height: 64px;
+	}
+
+	#header {
+		width: 100%;
+		background-color: rgb(30, 30, 30);
+		height: max-content;
+		font-size: 35px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		color: white;
+		padding: 10px 0px 10px 0px;
+		box-sizing: border-box;
+		border-top-left-radius: 10px;
+		border-top-right-radius: 10px;
+	}
+	#footer {
+		width: 100%;
+		background-color: rgb(30, 30, 30);
+		height: max-content;
+		font-size: 35px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		color: white;
+		padding: 10px 0px 10px 0px;
+		box-sizing: border-box;
+		border-bottom-left-radius: 10px;
+		border-bottom-right-radius: 10px;
+	}
+
+	#center {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	#outer-board {
+		position: relative;
+		width: $board-size;
+		height: $board-size;
+		// width: 640px;
+		// height: 640px;
+	}
+
+	#board {
+		position: absolute;
+		display: grid;
+		grid-template-columns: repeat(8, max-content);
+		// width: 32px;
+		// height: 32px;
+		// background-color: red;
+		width: $board-size;
+		height: $board-size;
+
+		// padding: 5px;
+		// box-sizing: border-box;
+		// border-radius: 10px;
+	}
+
+	#overlay {
+		// width: 32px;
+		// height: 32px;
+		width: $board-size;
+		height: $board-size;
+		background-color: rgba(0, 0, 0, 0.5);
+		position: absolute;
+		border-bottom-left-radius: 10px;
+		border-bottom-right-radius: 10px;
+		display: none;
+		justify-content: center;
+		align-items: center;
+		color: white;
+		font-size: 30px;
+	}
+
+	// #board > .square:first-child {
+	// 	border-top-left-radius: 5px;
+	// }
+	// #board > .square:nth-child(8) {
+	// 	border-top-right-radius: 5px;
+	// }
+
+	.square {
+		width: $board-size / 8;
+		height: $board-size / 8;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		position: relative;
+	}
+
+	.square > .piece-icon {
+		width: $board-size / 8;
+		height: $board-size / 8;
+	}
+
+	.square > .highlight-icon {
+		position: absolute;
+	}
+
+	.square > .row {
+		position: absolute;
+		top: 0;
+		right: 0;
+		margin-right: 3px;
+		margin-top: 3px;
+	}
+
+	.square > .rank {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		margin-left: 3px;
+		margin-bottom: 2px;
+	}
+
+	.square > .indicator {
+		font-weight: bold;
+		font-size: 16px;
+	}
+
+	.square.dark {
+		background-color: #d18b47;
+	}
+
+	.square.light {
+		background-color: #ffce9e;
+	}
+
+	.square.selected.dark {
+		background-color: #dac431;
+	}
+	.square.selected.light {
+		background-color: #f8ec5a;
+	}
+
+	.promotion-column {
+		width: $board-size / 8;
+		height: $board-size / 2;
+		position: absolute;
+		top: 0;
+	}
+
+	.promotion-column > div {
+		border-radius: 50%;
+		background-color: #b0b0b0;
+		box-shadow: inset 0 0 25px 3px gray;
+		width: $board-size / 8;
+		height: $board-size / 8;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	.promotion-column > div:hover {
+		box-shadow: inset 0 0 48px 8px #d64f00;
+		border-radius: 0%;
+	}
+	.promotion-column > div:hover > img {
+		width: $board-size / 8;
+		height: $board-size / 8;
+	}
+
+	.promotion-column > div > img {
+		width: $board-size * 3 / 32;
+		height: $board-size * 3 / 32;
+	}
+}

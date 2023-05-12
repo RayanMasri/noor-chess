@@ -1,0 +1,76 @@
+#multi {
+	#sidebar {
+		background-color: #2b2b2b;
+		width: 400px;
+		height: 100%;
+		position: fixed;
+		top: 0;
+		left: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+		align-items: center;
+
+		#created {
+			width: 90%;
+			background-color: white;
+			height: max-content;
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+			border-radius: 4px;
+			margin-top: 10px;
+			padding: 5px 7px 5px 7px;
+			box-sizing: border-box;
+
+			#code {
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+				align-items: center;
+				width: max-content;
+				height: max-content;
+			}
+		}
+	}
+
+	.MuiTextField-root {
+		width: 90%;
+	}
+
+	.MuiButton-root {
+		width: 90%;
+		font-size: 20px;
+		color: white;
+		text-transform: none;
+	}
+
+	.MuiTextField-root > .MuiInputBase-root {
+		background-color: white;
+	}
+
+	.MuiTextField-root > .MuiInputLabel-root {
+		color: red;
+	}
+
+	.MuiDivider-root {
+		width: 100%;
+		background-color: white;
+		margin: 20px 0px 20px 0px;
+	}
+
+	.MuiInput-root {
+		background-color: white;
+		width: 90%;
+		border-radius: 4px;
+		padding: 3px 5px 3px 5px;
+	}
+
+	.error {
+		width: 90%;
+		text-align: left;
+		color: red;
+		margin-top: 5px;
+	}
+}

@@ -8,8 +8,21 @@
 		<link rel="stylesheet" type="text/css" href="style.css" />
 	</head>
 	<body>
-		<div id="main">hi</div>
-		<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+		<div id="main">
+			<div>
+				<button id="join">Join</button>
+				<input type="text" placeholder="ID..." id="join-id" />
+			</div>
+			<button id="create">Create</button>
+
+			<div id="row-indicators"></div>
+			<div id="outer-board">
+				<div id="board"></div>
+				<div id="overlay"></div>
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
 		<script src="script.js"></script>
 	</body>
 </html>
