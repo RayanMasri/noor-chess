@@ -1,0 +1,30 @@
+{
+  "files": {
+    "main.css": "/RayanMasri/noor-chess/static/css/main.1084fc0e.css",
+    "main.js": "/RayanMasri/noor-chess/static/js/main.d5c629af.js",
+    "static/media/br.svg": "/RayanMasri/noor-chess/static/media/br.99c0ce7e539f599ba538.svg",
+    "static/media/bn.svg": "/RayanMasri/noor-chess/static/media/bn.b26069c4abd36f8d2f32.svg",
+    "static/media/bk.svg": "/RayanMasri/noor-chess/static/media/bk.abb6c3fa227f487fcfdc.svg",
+    "static/media/bq.svg": "/RayanMasri/noor-chess/static/media/bq.83c3a3e64b5f860daec4.svg",
+    "static/media/bb.svg": "/RayanMasri/noor-chess/static/media/bb.7743d788b018fe81d5fd.svg",
+    "static/media/wb.svg": "/RayanMasri/noor-chess/static/media/wb.858e6b7371a6be05d761.svg",
+    "static/media/wn.svg": "/RayanMasri/noor-chess/static/media/wn.d301e43e0ad61767c87f.svg",
+    "static/media/wr.svg": "/RayanMasri/noor-chess/static/media/wr.ab74c67ad033029e1b53.svg",
+    "static/media/wq.svg": "/RayanMasri/noor-chess/static/media/wq.2d4bc73954592ed4f486.svg",
+    "static/media/arrow-right.svg": "/RayanMasri/noor-chess/static/media/arrow-right.1c9ff74261b77931ccdf.svg",
+    "index.html": "/RayanMasri/noor-chess/index.html",
+    "static/media/bp.svg": "/RayanMasri/noor-chess/static/media/bp.11e2e74a2b7ae839e023.svg",
+    "static/media/wp.svg": "/RayanMasri/noor-chess/static/media/wp.d0bc0ccf34f559c73a5a.svg",
+    "static/media/wk.svg": "/RayanMasri/noor-chess/static/media/wk.88d49eae86c771606ff9.svg",
+    "static/media/person.svg": "/RayanMasri/noor-chess/static/media/person.86f75a5d6bbb1f5cff2f.svg",
+    "static/media/people.svg": "/RayanMasri/noor-chess/static/media/people.f5a643e363e2a03e5bd9.svg",
+    "static/media/stroke-circle.svg": "/RayanMasri/noor-chess/static/media/stroke-circle.0bf33202c2f87f3fd9e1c09a182073a4.svg",
+    "static/media/fill-circle.svg": "/RayanMasri/noor-chess/static/media/fill-circle.738ee09b3892956c0eead4bccfe76db4.svg",
+    "main.1084fc0e.css.map": "/RayanMasri/noor-chess/static/css/main.1084fc0e.css.map",
+    "main.d5c629af.js.map": "/RayanMasri/noor-chess/static/js/main.d5c629af.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.1084fc0e.css",
+    "static/js/main.d5c629af.js"
+  ]
+}
