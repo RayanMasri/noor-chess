@@ -28,16 +28,6 @@
 		"test": "react-scripts test",
 		"eject": "react-scripts eject"
 	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/RayanMasri/noor-chess.git"
-	},
-	"author": "",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/RayanMasri/noor-chess/issues"
-	},
-	"homepage": "https://github.com/RayanMasri/noor-chess#readme",
 	"dependencies": {
 		"babel-loader": "^9.1.2",
 		"chess.js": "^1.0.0-beta.5",
