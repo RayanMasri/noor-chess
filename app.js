@@ -4,8 +4,7 @@ const http = require('http');
 const server = http.createServer(app);
 const { Chess } = require('chess.js');
 
-// let engine = new Chess('8/4P3/8/8/k7/8/K7/8 w - - 0 1');
-// // console.log(engine.fen());
+// let engine = new Chess('8/4P3/8/8/8/1K6/8/1k6 b - - 0 1');
 // console.log(engine.moves({ verbose: true }));
 // console.log(engine.board());
 
@@ -126,7 +125,12 @@ io.on('connection', (socket) => {
 				io.to(id).emit('update-board', {
 					// fen: user.data.engine.fen(),
 					board: user.data.engine.board(),
-					legal: user.data.engine.turn() == user.data.color ? user.data.engine.moves({ verbose: true }) : [],
+					legal:
+						user.data.engine.turn() == user.data.color
+							? user.data.engine.moves({ verbose: true }).map((move) => {
+									return { from: move.from, to: move.to };
+							  })
+							: [],
 					over: false,
 					players: users.map(([_, user]) => user.data.name),
 					turn: user.data.engine.turn(),
@@ -184,7 +188,12 @@ io.on('connection', (socket) => {
 				io.to(id).emit('start', {
 					board: user.data.engine.board(),
 					color: user.data.color,
-					legal: user.data.engine.turn() == user.data.color ? user.data.engine.moves({ verbose: true }) : [],
+					legal:
+						user.data.engine.turn() == user.data.color
+							? user.data.engine.moves({ verbose: true }).map((move) => {
+									return { from: move.from, to: move.to };
+							  })
+							: [],
 					players: users.map(([_, user]) => user.data.name),
 					turn: user.data.engine.turn(),
 				});

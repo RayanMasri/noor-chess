@@ -79,85 +79,46 @@ export default function Game() {
 		pieces: [],
 		// legal: [
 		// 	{
-		// 		color: 'w',
-		// 		piece: 'p',
-		// 		from: 'e7',
-		// 		to: 'e8',
-		// 		san: 'e8=N',
-		// 		flags: 'np',
-		// 		lan: 'e7e8n',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '4N3/8/8/8/k7/8/K7/8 b - - 0 1',
-		// 		promotion: 'n',
-		// 	},
-		// 	{
-		// 		color: 'w',
-		// 		piece: 'p',
-		// 		from: 'e7',
-		// 		to: 'e8',
-		// 		san: 'e8=B+',
-		// 		flags: 'np',
-		// 		lan: 'e7e8b',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '4B3/8/8/8/k7/8/K7/8 b - - 0 1',
-		// 		promotion: 'b',
-		// 	},
-		// 	{
-		// 		color: 'w',
-		// 		piece: 'p',
-		// 		from: 'e7',
-		// 		to: 'e8',
-		// 		san: 'e8=R',
-		// 		flags: 'np',
-		// 		lan: 'e7e8r',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '4R3/8/8/8/k7/8/K7/8 b - - 0 1',
-		// 		promotion: 'r',
-		// 	},
-		// 	{
-		// 		color: 'w',
-		// 		piece: 'p',
-		// 		from: 'e7',
-		// 		to: 'e8',
-		// 		san: 'e8=Q+',
-		// 		flags: 'np',
-		// 		lan: 'e7e8q',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '4Q3/8/8/8/k7/8/K7/8 b - - 0 1',
-		// 		promotion: 'q',
-		// 	},
-		// 	{
-		// 		color: 'w',
+		// 		color: 'b',
 		// 		piece: 'k',
-		// 		from: 'a2',
-		// 		to: 'b2',
-		// 		san: 'Kb2',
+		// 		from: 'b2',
+		// 		to: 'c2',
+		// 		san: 'Kc1',
 		// 		flags: 'n',
-		// 		lan: 'a2b2',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '8/4P3/8/8/k7/8/1K6/8 b - - 1 1',
+		// 		lan: 'b2c1',
+		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
+		// 		after: '8/4P3/8/8/8/1K6/8/2k5 w - - 1 2',
 		// 	},
 		// 	{
-		// 		color: 'w',
+		// 		color: 'b',
 		// 		piece: 'k',
-		// 		from: 'a2',
-		// 		to: 'b1',
-		// 		san: 'Kb1',
-		// 		flags: 'n',
-		// 		lan: 'a2b1',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '8/4P3/8/8/k7/8/8/1K6 b - - 1 1',
-		// 	},
-		// 	{
-		// 		color: 'w',
-		// 		piece: 'k',
-		// 		from: 'a2',
-		// 		to: 'a1',
+		// 		from: 'b2',
+		// 		to: 'a2',
 		// 		san: 'Ka1',
 		// 		flags: 'n',
-		// 		lan: 'a2a1',
-		// 		before: '8/4P3/8/8/k7/8/K7/8 w - - 0 1',
-		// 		after: '8/4P3/8/8/k7/8/8/K7 b - - 1 1',
+		// 		lan: 'b2a1',
+		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
+		// 		after: '8/4P3/8/8/8/1K6/8/k7 w - - 1 2',
+		// 	},
+
+		// 	{
+		// 		color: 'b',
+		// 		piece: 'k',
+		// 		from: 'b2',
+		// 		to: 'b1',
+		// 		san: 'Ka1',
+		// 		flags: 'n',
+		// 		lan: 'b2a1',
+		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
+		// 		after: '8/4P3/8/8/8/1K6/8/k7 w - - 1 2',
+		// 	},
+		// 	{
+		// 		from: 'b2',
+		// 		to: 'c1',
+		// 	},
+		// 	{
+		// 		from: 'b2',
+		// 		to: 'a1',
 		// 	},
 		// ],
 		// pieces: [
@@ -165,16 +126,16 @@ export default function Game() {
 		// 	[null, null, null, null, { square: 'e7', type: 'p', color: 'w' }, null, null, null],
 		// 	[null, null, null, null, null, null, null, null],
 		// 	[null, null, null, null, null, null, null, null],
-		// 	[{ square: 'a4', type: 'k', color: 'b' }, null, null, null, null, null, null, null],
-		// 	[null, null, null, null, null, null, null, null],
-		// 	[{ square: 'a2', type: 'k', color: 'w' }, null, null, null, null, null, null, null],
-		// 	[null, null, null, null, null, null, null, null],
+		// 	[null, { square: 'b4', type: 'k', color: 'w' }, null, null, null, null, null, null],
+		// 	[null, , null, null, null, null, null, null],
+		// 	[null, { square: 'b2', type: 'k', color: 'b' }, null, null, null, null, null, null],
+		// 	[null, , null, null, null, null, null, null],
 		// ],
 		highlighted: [],
 		overlay: false,
 		overlayMessage: '',
 		waitPromote: { status: false, offset: 0, from: null, to: null },
-		color: 'w',
+		color: 'b',
 		players: [],
 	});
 	const _state = useRef(state);
@@ -215,6 +176,10 @@ export default function Game() {
 		});
 	});
 
+	const copyBoard = (board) => {
+		return JSON.parse(JSON.stringify(board));
+	};
+
 	const requestPromotion = (from, to) => {
 		setState({
 			...state,
@@ -225,7 +190,40 @@ export default function Game() {
 		});
 	};
 
+	const getBoardPieceByNotation = (board, notation) => {
+		let [rank, row] = notation.split('');
+		rank = 'abcdefgh'.indexOf(rank);
+		row = 8 - row;
+
+		return { piece: board[row][rank], row: row, rank: rank };
+	};
+
 	const sendMove = (from, to, promotion = null) => {
+		let board = copyBoard(state.pieces);
+		console.log(copyBoard(board));
+		let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
+		let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
+
+		let piece = board[fromRow][fromRank];
+		if (promotion != null) piece.type = promotion;
+
+		board[fromRow][fromRank] = null;
+		board[toRow][toRank] = piece;
+
+		// console.log([fromRow, fromRank]);
+		// console.log([toRow, toRank]);
+		// { square: 'a4', type: 'k', color: 'b' }
+		console.log(board);
+
+		setState({
+			..._state.current,
+			pieces: board,
+			waitPromote: { status: false, offset: 0, from: null, to: null },
+			overlay: false,
+			highlighted: [],
+			selected: null,
+		});
+
 		socket.emit('move', { from: from, to: to, promotion: promotion }, (response) => {
 			if (response.status) {
 				console.log(`Successfully moved ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}`);
@@ -252,8 +250,7 @@ export default function Game() {
 				requestPromotion(state.selected, position);
 				return;
 			} else {
-				sendMove(state.selected, position);
-				return setState({ ...state, highlighted: [], selected: null });
+				return sendMove(state.selected, position);
 			}
 		}
 
@@ -280,7 +277,7 @@ export default function Game() {
 		if (state.color == 'w') {
 			return state.pieces;
 		} else {
-			let pieces = JSON.parse(JSON.stringify(state.pieces));
+			let pieces = copyBoard(state.pieces);
 			return pieces.map((row) => row.reverse()).reverse();
 		}
 	};
@@ -385,11 +382,11 @@ export default function Game() {
 										return (
 											<div
 												onClick={() => {
-													setState({
-														...state,
-														waitPromote: { status: false, offset: 0, from: null, to: null },
-														overlay: false,
-													});
+													// setState({
+													// 	...state,
+													// 	waitPromote: { status: false, offset: 0, from: null, to: null },
+													// 	overlay: false,
+													// });
 													sendMove(state.waitPromote.from, state.waitPromote.to, promotable);
 												}}
 											>
