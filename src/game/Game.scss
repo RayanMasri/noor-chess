@@ -129,6 +129,7 @@ $board-size: 640px;
 
 	.square > .highlight-icon {
 		position: absolute;
+		z-index: 1;
 	}
 
 	.square > .row {
