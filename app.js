@@ -10,8 +10,9 @@ const { Chess } = require('chess.js');
 
 // TODO: add reconnection capabilities to socket client
 // TODO: Handle promotion *
-// TODO: Handle end game
-// TODO: Handle other user leave
+// TODO: Handle end game *
+// TODO: Handle other user leave *
+// TODO: Handle same browser login
 
 // app.use(express.static(__dirname + '/public'));
 // app.get('/', (req, res) => {

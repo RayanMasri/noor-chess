@@ -199,7 +199,10 @@ export default function Game() {
 	};
 
 	const sendMove = (from, to, promotion = null) => {
+		// let start = Date.now()
+		// console.log(`Sending move from "${from}" to "${to}"`)
 		let board = copyBoard(state.pieces);
+		// console.log(`Copied board `)
 		console.log(copyBoard(board));
 		let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
 		let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
@@ -234,7 +237,10 @@ export default function Game() {
 	};
 
 	const onClick = (position, piece) => {
+		console.log(`onClick event`);
+		let start = Date.now();
 		let hasPiece = piece != null;
+		console.log(`Clicked on ${position} with piece object: ${piece}, has piece: ${hasPiece} (${Date.now() - start} ms)`);
 
 		if (
 			state.selected != null &&
@@ -244,9 +250,12 @@ export default function Game() {
 				.includes(position)
 		) {
 			let moves = state.legal.filter((move) => move.from == state.selected).filter((move) => move.to == position);
+
+			console.log(`Click position is a legal move for the currently selected piece, moving... (${Date.now() - start} ms)`);
+
 			// If moves to the same square are greater than one, it's a promotion
 			if (moves.length > 1) {
-				console.log('Requesting promotion...');
+				console.log(`Legal moves of the same position are multiple, requesting promotion... (${Date.now() - start} ms)`);
 				requestPromotion(state.selected, position);
 				return;
 			} else {
@@ -255,16 +264,19 @@ export default function Game() {
 		}
 
 		if (!hasPiece) {
+			console.log(`Click position does not have any pieces, ignoring... (${Date.now() - start} ms)`);
 			if (state.selected != null) setState({ ...state, highlighted: [], selected: null });
 			return;
 		}
 
 		if (!state.legal.map((move) => move.from).includes(position)) {
+			console.log(`Selected piece does not have any legal moves, ignoring... (${Date.now() - start} ms)`);
 			if (state.selected != null) setState({ ...state, highlighted: [], selected: null });
 			return;
 		}
 
 		let highlighted = state.legal.filter((move) => move.from == position).map((move) => move.to);
+		console.log(`Selected piece has ${highlighted.length} legal move(s), highlighting all... (${Date.now() - start} ms)`);
 
 		setState({
 			..._state.current,
