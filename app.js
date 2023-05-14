@@ -4,9 +4,13 @@ const http = require('http');
 const server = http.createServer(app);
 const { Chess } = require('chess.js');
 
-// let engine = new Chess('8/4P3/8/8/8/1K6/8/1k6 b - - 0 1');
-// console.log(engine.moves({ verbose: true }));
-// console.log(engine.board());
+let engine = new Chess('8/8/7k/8/7K/8/3p4/8 b - - 0 1');
+console.log(
+	JSON.stringify({
+		board: engine.board(),
+		legal: engine.moves({ verbose: true }),
+	})
+);
 
 // TODO: add reconnection capabilities to socket client
 // TODO: Handle promotion *
@@ -48,6 +52,32 @@ const makeRoomCode = (length) => {
 
 // TODO: add piece promotion
 
+const getRoomsData = () => {
+	return Array.from(io.sockets.adapter.rooms)
+		.map(([name, users]) => {
+			if (!name.startsWith('room.') || name == 'lobby') return;
+
+			let id = name.split('.')[1];
+			return {
+				id: id,
+				names: Array.from(users).map((user) => {
+					let socket = io.sockets.sockets.get(user);
+					return socket.data.name;
+				}),
+			};
+		})
+		.filter((room) => room);
+};
+
+const informLobby = (socket) => {
+	let data = getRoomsData();
+
+	console.log(`Informing lobby of this data:`);
+	console.log(data);
+
+	io.in('lobby').emit('lobby-update', data);
+};
+
 io.on('connection', (socket) => {
 	console.log(`"${socket.id}" connected`);
 
@@ -61,14 +91,25 @@ io.on('connection', (socket) => {
 			if (users.length != 1) return;
 
 			if (io.sockets.sockets.get(users[0]).data.started) {
-				io.to(users[0]).emit('disconnection');
+				io.to(users[0]).emit('disconnection', { reason: 'disconnected' });
 			}
 		});
 
 		// console.log(Array.from(io.sockets.adapter.rooms));
 	});
 
-	// console.log(Array.from(io.sockets.adapter.rooms));
+	socket.on('exit', () => {
+		let roomName = Array.from(socket.rooms).find((room) => room.startsWith('room.'));
+		if (roomName == undefined) return;
+
+		socket.to(roomName).emit('disconnection', { reason: 'voluntarily left' });
+	});
+
+	socket.on('join-lobby', (callback) => {
+		console.log('join-lobby');
+		socket.join('lobby');
+		callback(getRoomsData());
+	});
 
 	socket.on('move', (data, callback) => {
 		let { from, to, promotion } = data;
@@ -185,6 +226,7 @@ io.on('connection', (socket) => {
 
 			users.map(([id, user]) => {
 				user.data.started = true;
+				user.leave('lobby');
 
 				io.to(id).emit('start', {
 					board: user.data.engine.board(),
@@ -201,6 +243,7 @@ io.on('connection', (socket) => {
 			});
 		}
 
+		informLobby();
 		callback({ status: true });
 	});
 
@@ -214,6 +257,7 @@ io.on('connection', (socket) => {
 		socket.data.started = false;
 		socket.data.name = data.name || 'Unnamed';
 
+		informLobby();
 		callback(code);
 	});
 });

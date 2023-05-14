@@ -6,9 +6,12 @@ import PeopleIcon from '@mui/icons-material/People';
 import { useNavigate } from 'react-router-dom';
 
 // FIXME: Offset is increased by one cell for black promotion
-// FIXME: Stroke circle on piece capture highlights pours out of cell
-// FIXME: Slow piece move responsiveness, solution:
-// - If move is legal, move piece in client before receiving board data from server (data merges)
+// FIXME: Stroke circle on piece capture highlights pours out of cell *
+// FIXME: Slow piece move responsiveness *
+// FIXME: Not making moves for a long time destroys any functionality of the game
+// FIXME: Playing a game and then playing another game prevents a user from seeing the other user's moves,
+// TODO: Add color selection
+// TODO: Add room grid viewing
 // TODO: Add piece animation
 // TODO: Add premoves
 // TODO: Add score tally

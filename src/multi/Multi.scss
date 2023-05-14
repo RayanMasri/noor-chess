@@ -1,11 +1,64 @@
 #multi {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+
+	#rooms {
+		padding: 10px 0px 0px 10px;
+		display: grid;
+
+		grid-template-columns: repeat(3, max-content);
+		column-gap: 10px;
+
+		.room {
+			background-color: rgb(42, 42, 42);
+			width: 350px;
+			height: max-content;
+			border-radius: 5px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+
+			.top {
+				margin: 10px 10px 10px 10px;
+				font-size: 20px;
+				color: white;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				flex-direction: row;
+				height: 100%;
+			}
+
+			.top > img {
+				width: 64px;
+				height: 64px;
+			}
+
+			.join-btn:not(.Mui-disabled) {
+				background-color: #266308;
+			}
+
+			.join-btn.Mui-disabled {
+				background-color: gray;
+			}
+
+			.join-btn {
+				width: 100%;
+				border-radius: 0px;
+				font-size: 16px;
+				height: 24px;
+				border-bottom-left-radius: 5px;
+				border-bottom-right-radius: 5px;
+			}
+		}
+	}
+
 	#sidebar {
 		background-color: #2b2b2b;
 		width: 400px;
 		height: 100%;
-		position: fixed;
-		top: 0;
-		left: 0;
+
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-start;

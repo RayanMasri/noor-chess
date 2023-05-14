@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { socket } from '../socket.js';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { IconButton } from '@mui/material';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import './Game.scss';
 
 const cellSize = 80;
@@ -50,7 +52,7 @@ const Square = (props) => {
 			}}
 		>
 			{props.children}
-			{props.highlighted ? <img className='highlight-icon' src={require(props.piece ? '../icons/stroke-circle.svg' : '../icons/fill-circle.svg').default}></img> : null}
+			{props.highlighted ? <img draggable='false' className='highlight-icon' src={require(props.piece ? '../icons/stroke-circle.svg' : '../icons/fill-circle.svg').default}></img> : null}
 			<div className='rank indicator' style={{ color: props.shade == 'light' ? '#d18b47' : '#ffce9e' }}>
 				{props.row == (props.color == 'w' ? 1 : 8) ? 'abcdefgh'[props.rank] : null}
 			</div>
@@ -73,74 +75,19 @@ const Square = (props) => {
 // };
 
 export default function Game() {
+	const navigate = useNavigate();
 	const [state, _setState] = useState({
 		selected: null,
 		legal: [],
 		pieces: [],
-		// legal: [
-		// 	{
-		// 		color: 'b',
-		// 		piece: 'k',
-		// 		from: 'b2',
-		// 		to: 'c2',
-		// 		san: 'Kc1',
-		// 		flags: 'n',
-		// 		lan: 'b2c1',
-		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
-		// 		after: '8/4P3/8/8/8/1K6/8/2k5 w - - 1 2',
-		// 	},
-		// 	{
-		// 		color: 'b',
-		// 		piece: 'k',
-		// 		from: 'b2',
-		// 		to: 'a2',
-		// 		san: 'Ka1',
-		// 		flags: 'n',
-		// 		lan: 'b2a1',
-		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
-		// 		after: '8/4P3/8/8/8/1K6/8/k7 w - - 1 2',
-		// 	},
 
-		// 	{
-		// 		color: 'b',
-		// 		piece: 'k',
-		// 		from: 'b2',
-		// 		to: 'b1',
-		// 		san: 'Ka1',
-		// 		flags: 'n',
-		// 		lan: 'b2a1',
-		// 		before: '8/4P3/8/8/8/1K6/8/1k6 b - - 0 1',
-		// 		after: '8/4P3/8/8/8/1K6/8/k7 w - - 1 2',
-		// 	},
-		// 	{
-		// 		from: 'b2',
-		// 		to: 'c1',
-		// 	},
-		// 	{
-		// 		from: 'b2',
-		// 		to: 'a1',
-		// 	},
-		// 	{
-		// 		from: 'e6',
-		// 		to: 'e7',
-		// 	},
-		// ],
-		// pieces: [
-		// 	[null, null, null, null, null, null, null, null],
-		// 	[null, null, null, null, { square: 'e7', type: 'p', color: 'w' }, null, null, null],
-		// 	[null, null, null, null, { square: 'e6', type: 'q', color: 'b' }, null, null, null],
-		// 	[null, null, null, null, null, null, null, null],
-		// 	[null, { square: 'b4', type: 'k', color: 'w' }, null, null, null, null, null, null],
-		// 	[null, null, null, null, null, null, null, null],
-		// 	[null, { square: 'b2', type: 'k', color: 'b' }, null, null, null, null, null, null],
-		// 	[null, null, null, null, null, null, null, null],
-		// ],
 		highlighted: [],
 		overlay: false,
 		overlayMessage: '',
 		waitPromote: { status: false, offset: 0, from: null, to: null },
-		color: 'w',
-		players: [],
+		color: 'b',
+		players: ['Loading...', 'Loading...'],
+		gameOver: true,
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -150,45 +97,59 @@ export default function Game() {
 
 	const location = useLocation();
 
-	const onUpdateBoard = (data) => {
-		console.log(`Updating color to ${data.color != undefined ? data.color : state.color}`);
+	useEffect(() => {
+		console.log(`State changed to:`);
+		console.log(state);
+	}, [state]);
+
+	const onUpdateBoard = (data, color = undefined) => {
+		console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}):`);
+		console.log(data);
+
+		// console.log(`Updating color to ${data.color != undefined ? data.color : state.color}`);
 		setState({
-			...state,
+			..._state.current,
 			pieces: data.board,
 			legal: data.legal,
 			overlay: data.over,
 			overlayMessage: data.over ? data.reason : '',
-			color: data.color != undefined ? data.color : state.color,
+			color: color != undefined ? color : _state.current.color,
+			// color: data.color != undefined ? data.color : state.color,
 			players: data.players,
 			turn: data.turn,
+			gameOver: data.over,
 		});
 	};
 
 	useEffect(() => {
-		onUpdateBoard(location.state);
-	}, []);
-
-	socket.on('update-board', (data) => {
-		onUpdateBoard(data);
-	});
-
-	socket.on('disconnection', (data) => {
-		setState({
-			...state,
-			overlay: true,
-			overlayMessage: `Opponent "${state.players.filter((item) => item == localStorage.getItem('name'))[0]}" disconnected`,
+		socket.on('update-board', (data) => {
+			onUpdateBoard(data);
 		});
-	});
+
+		socket.on('disconnection', (data) => {
+			console.log('set state disconnection');
+			setState({
+				...state,
+				overlay: true,
+				overlayMessage: `Opponent "${state.players.filter((item) => item == localStorage.getItem('name'))[0]}" ${data.reason}`,
+				gameOver: true,
+			});
+		});
+
+		if (location.state == null) return;
+		onUpdateBoard(location.state, location.state.color);
+	}, []);
 
 	const copyBoard = (board) => {
 		return JSON.parse(JSON.stringify(board));
 	};
 
 	const requestPromotion = (from, to) => {
+		console.log('set staet proomotin');
 		setState({
 			...state,
 			overlay: true,
-			waitPromote: { status: true, offset: 'abcdefgh'.indexOf(to.split('')[0]) * cellSize, from: from, to: to },
+			waitPromote: { status: true, offset: (_state.current.color == 'w' ? 'abcdefgh' : 'hgfedcba').indexOf(to.split('')[0]) * cellSize, from: from, to: to },
 			highlighted: [],
 			selected: null,
 		});
@@ -207,7 +168,6 @@ export default function Game() {
 		// console.log(`Sending move from "${from}" to "${to}"`)
 		let board = copyBoard(state.pieces);
 		// console.log(`Copied board `)
-		console.log(copyBoard(board));
 		let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
 		let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
 
@@ -220,8 +180,7 @@ export default function Game() {
 		// console.log([fromRow, fromRank]);
 		// console.log([toRow, toRank]);
 		// { square: 'a4', type: 'k', color: 'b' }
-		console.log(board);
-
+		console.log('set state send move');
 		setState({
 			..._state.current,
 			pieces: board,
@@ -290,12 +249,23 @@ export default function Game() {
 	};
 
 	const getPieces = () => {
+		console.log(`Loading pieces, color is ${state.color}`);
+
 		if (state.color == 'w') {
+			console.log(state.pieces);
 			return state.pieces;
 		} else {
 			let pieces = copyBoard(state.pieces);
-			return pieces.map((row) => row.reverse()).reverse();
+			pieces = pieces.map((row) => row.reverse()).reverse();
+			console.log(pieces);
+			return pieces;
 		}
+	};
+
+	const exitGame = () => {
+		if (!state.gameOver) socket.emit('exit');
+
+		navigate('/multiplayer');
 	};
 
 	// const getMissing = (pieces) => {
@@ -340,7 +310,19 @@ export default function Game() {
 					})} */}
 				</div>
 				<div id='center'>
-					<div id='header'>{state.players.join(' vs ')}</div>
+					<div id='header'>
+						<IconButton
+							style={{
+								backgroundColor: '#9F0C20',
+								borderRadius: '10px',
+							}}
+							className='exit-btn'
+							onClick={exitGame}
+						>
+							<ExitToAppIcon sx={{ color: 'white' }} />
+						</IconButton>
+						<div>{state.players.join(' vs ')}</div>
+					</div>
 					<div id='outer-board'>
 						<div
 							id='board'
@@ -374,7 +356,7 @@ export default function Game() {
 												highlighted={state.highlighted.includes(position)}
 												onClick={onClick}
 											>
-												{piece != null ? <img className='piece-icon' src={require(`../icons/${piece.color}${piece.type}.svg`)}></img> : null}
+												{piece != null ? <img draggable='false' className='piece-icon' src={require(`../icons/${piece.color}${piece.type}.svg`)}></img> : null}
 											</Square>
 										);
 									});
@@ -406,7 +388,7 @@ export default function Game() {
 													sendMove(state.waitPromote.from, state.waitPromote.to, promotable);
 												}}
 											>
-												<img src={require(`../icons/${state.color}${promotable}.svg`)}></img>
+												<img draggable='false' src={require(`../icons/${state.color}${promotable}.svg`)}></img>
 											</div>
 										);
 									})}

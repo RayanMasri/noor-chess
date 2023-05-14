@@ -44,6 +44,17 @@ $board-size: 640px;
 		box-sizing: border-box;
 		border-top-left-radius: 10px;
 		border-top-right-radius: 10px;
+		position: relative;
+
+		.exit-btn {
+			position: absolute;
+			width: 40px;
+			height: 40px;
+			margin-top: -20px;
+			margin-right: 10px;
+			top: 50%;
+			right: 0;
+		}
 	}
 	#footer {
 		width: 100%;
@@ -84,6 +95,9 @@ $board-size: 640px;
 		// background-color: red;
 		width: $board-size;
 		height: $board-size;
+
+		user-select: none;
+		user-drag: none;
 
 		// padding: 5px;
 		// box-sizing: border-box;
