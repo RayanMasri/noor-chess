@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.ebedead7.css",
-    "main.js": "/static/js/main.a70fc775.js",
+    "main.css": "/static/css/main.dfc43932.css",
+    "main.js": "/static/js/main.77f73bba.js",
     "static/media/chess-board.svg": "/static/media/chess-board.865ceefda74d228e4edfaced453b9f6b.svg",
     "static/media/br.svg": "/static/media/br.99c0ce7e539f599ba538.svg",
     "static/media/bn.svg": "/static/media/bn.b26069c4abd36f8d2f32.svg",
@@ -21,11 +21,11 @@
     "index.html": "/index.html",
     "static/media/stroke-circle.svg": "/static/media/stroke-circle.4da3d19c4fbb0d709b28e9453b49458d.svg",
     "static/media/fill-circle.svg": "/static/media/fill-circle.aea85b5c59da0db759b650afb98548c7.svg",
-    "main.ebedead7.css.map": "/static/css/main.ebedead7.css.map",
-    "main.a70fc775.js.map": "/static/js/main.a70fc775.js.map"
+    "main.dfc43932.css.map": "/static/css/main.dfc43932.css.map",
+    "main.77f73bba.js.map": "/static/js/main.77f73bba.js.map"
   },
   "entrypoints": [
-    "static/css/main.ebedead7.css",
-    "static/js/main.a70fc775.js"
+    "static/css/main.dfc43932.css",
+    "static/js/main.77f73bba.js"
   ]
 }

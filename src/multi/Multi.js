@@ -6,14 +6,19 @@ import { socket } from '../socket.js';
 import { useNavigate } from 'react-router-dom';
 import './Multi.scss';
 
+let colors = {
+	'w': 'White',
+	'b': 'Black',
+};
+
 const Room = (props) => {
 	return (
 		<div className='room'>
 			<div className='top'>
 				<div>
 					{props.room.names.length < 2
-						? `Owner: ${props.room.names[0]}`
-						: `${props.room.names[0]}\nvs\n${props.room.names[1]}`.split('\n').map((line) => {
+						? `Owner: ${props.room.names[0].name} (${colors[props.room.names[0].color]})`
+						: `${props.room.names[0].name} (${colors[props.room.names[0].color]})\nvs\n${props.room.names[1].name} (${colors[props.room.names[1].color]})`.split('\n').map((line) => {
 								return <div>{line}</div>;
 						  })}
 				</div>
@@ -35,6 +40,7 @@ export default function Multi(props) {
 		joinError: '',
 		game: false,
 		rooms: [],
+		color: 'w',
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -108,11 +114,17 @@ export default function Multi(props) {
 	};
 
 	const onCreate = () => {
-		socket.emit('create', { name: state.name }, (code) => {
+		socket.emit('create', { name: state.name, color: state.color }, (code) => {
 			setState({
 				...state,
 				createId: code,
 			});
+		});
+	};
+	const onChoose = (color) => {
+		setState({
+			...state,
+			color: color,
 		});
 	};
 
@@ -166,6 +178,26 @@ export default function Multi(props) {
 				</div>
 
 				<Divider />
+				<div id='colors'>
+					<Button
+						style={{ backgroundColor: '#266308' }}
+						onClick={() => {
+							onChoose('w');
+						}}
+						className={state.color == 'w' ? 'selected' : ''}
+					>
+						White
+					</Button>
+					<Button
+						style={{ backgroundColor: '#266308' }}
+						onClick={() => {
+							onChoose('b');
+						}}
+						className={state.color == 'b' ? 'selected' : ''}
+					>
+						Black
+					</Button>
+				</div>
 				<Button style={{ backgroundColor: '#266308' }} onClick={onCreate}>
 					Create
 				</Button>

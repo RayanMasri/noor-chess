@@ -99,6 +99,8 @@ $board-size: 640px;
 		user-select: none;
 		user-drag: none;
 
+		z-index: 1;
+
 		// padding: 5px;
 		// box-sizing: border-box;
 		// border-radius: 10px;
@@ -111,13 +113,45 @@ $board-size: 640px;
 		height: $board-size;
 		background-color: rgba(0, 0, 0, 0.5);
 		position: absolute;
-		border-bottom-left-radius: 10px;
-		border-bottom-right-radius: 10px;
 		display: none;
 		justify-content: center;
 		align-items: center;
 		color: white;
 		font-size: 30px;
+		z-index: 2;
+	}
+
+	#move-overlay {
+		// width: 32px;
+		// height: 32px;
+		width: $board-size;
+		height: $board-size;
+		// background-color: rgba(0, 0, 0, 0.5);
+		position: absolute;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		pointer-events: none;
+	}
+
+	#move-overlay > .move-transition {
+		transition-timing-function: linear;
+		position: absolute;
+		width: $board-size / 8;
+		height: $board-size / 8;
+	}
+	#move-overlay > .move-transition > img {
+		width: $board-size / 8;
+		height: $board-size / 8;
+	}
+
+	#background {
+		// background-color: coral;
+		width: $board-size;
+		height: $board-size;
+		display: grid;
+		grid-template-columns: repeat(8, max-content);
+		position: absolute;
 	}
 
 	// #board > .square:first-child {
@@ -126,6 +160,20 @@ $board-size: 640px;
 	// #board > .square:nth-child(8) {
 	// 	border-top-right-radius: 5px;
 	// }
+	.piece {
+		position: absolute;
+		width: $board-size / 8;
+		height: $board-size / 8;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.piece > .piece-icon {
+		width: $board-size / 8;
+		height: $board-size / 8;
+		pointer-events: none;
+	}
 
 	.square {
 		width: $board-size / 8;
@@ -136,14 +184,19 @@ $board-size: 640px;
 		position: relative;
 	}
 
-	.square > .piece-icon {
+	.square > .capture-icon {
+		opacity: 0.5;
 		width: $board-size / 8;
 		height: $board-size / 8;
+		pointer-events: none;
 	}
 
 	.square > .highlight-icon {
+		width: $board-size / 8;
+		height: $board-size / 8;
 		position: absolute;
 		z-index: 1;
+		pointer-events: none;
 	}
 
 	.square > .row {
@@ -173,6 +226,13 @@ $board-size: 640px;
 
 	.square.light {
 		background-color: #ffce9e;
+	}
+
+	.square.dark > .indicator {
+		color: #ffce9e;
+	}
+	.square.light > .indicator {
+		color: #d18b47;
 	}
 
 	.square.selected.dark {
@@ -211,5 +271,112 @@ $board-size: 640px;
 	.promotion-column > div > img {
 		width: $board-size * 3 / 32;
 		height: $board-size * 3 / 32;
+	}
+
+	@media only screen and (max-width: 700px) {
+		$board-size: 91.42vw;
+
+		#header {
+			font-size: 5vw;
+			.exit-btn {
+				position: absolute;
+				width: 5.71vw;
+				height: 5.71vw;
+				margin-top: -2.85vw;
+				margin-right: 1.42vw;
+				top: 50%;
+				right: 0;
+			}
+
+			.exit-btn > .MuiSvgIcon-root {
+				width: 3.42vw;
+				height: 3.42vw;
+			}
+		}
+		#footer {
+			font-size: 5vw;
+		}
+
+		#background {
+			width: $board-size;
+			height: $board-size;
+		}
+		#outer-board {
+			width: $board-size;
+			height: $board-size;
+		}
+
+		#board {
+			width: $board-size;
+			height: $board-size;
+		}
+
+		#overlay {
+			width: $board-size;
+			height: $board-size;
+		}
+
+		#move-overlay {
+			width: $board-size;
+			height: $board-size;
+		}
+
+		#move-overlay > .move-transition {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+		#move-overlay > .move-transition > img {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.square > .indicator {
+			font-size: 2.28vw;
+		}
+
+		.piece {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.piece > .piece-icon {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.square {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.square > .capture-icon {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.square > .highlight-icon {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.promotion-column {
+			width: $board-size / 8;
+			height: $board-size / 2;
+		}
+
+		.promotion-column > div {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.promotion-column > div:hover > img {
+			width: $board-size / 8;
+			height: $board-size / 8;
+		}
+
+		.promotion-column > div > img {
+			width: $board-size * 3 / 32;
+			height: $board-size * 3 / 32;
+		}
 	}
 }

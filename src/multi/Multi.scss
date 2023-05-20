@@ -64,6 +64,28 @@
 		justify-content: flex-start;
 		align-items: center;
 
+		#colors {
+			width: 90%;
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			margin-bottom: 10px;
+		}
+
+		#colors > .MuiButton-root {
+			background-color: silver !important;
+			color: white;
+		}
+
+		#colors > .MuiButton-root.selected {
+			background-color: lightblue !important;
+			color: black;
+		}
+
+		#colors > .MuiButton-root:last-child {
+			margin-left: 10px;
+		}
+
 		#created {
 			width: 90%;
 			background-color: white;

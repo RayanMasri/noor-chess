@@ -1,42 +1,50 @@
-const express = require('express');
-const app = express();
-const http = require('http');
-const server = http.createServer(app);
+const { server, io } = require('./load.js');
+
 const { Chess } = require('chess.js');
 
-let engine = new Chess('8/8/7k/8/7K/8/3p4/8 b - - 0 1');
-console.log(
-	JSON.stringify({
-		board: engine.board(),
-		legal: engine.moves({ verbose: true }),
-	})
-);
+// console.log(engine.history({ verbose: true }));
+// Create a new Chess instance
+
+// engine.move({ from: 'd2', to: 'd1', promotion: 'b' });
+// console.log(
+// 	JSON.stringify({
+// 		board: engine.board(),
+// 		legal: engine.moves({ verbose: true }),
+// 	})
+// );
 
 // TODO: add reconnection capabilities to socket client
 // TODO: Handle promotion *
 // TODO: Handle end game *
 // TODO: Handle other user leave *
 // TODO: Handle same browser login
+// TODO: add piece promotion
 
-// app.use(express.static(__dirname + '/public'));
-// app.get('/', (req, res) => {
-// 	res.sendFile(__dirname + '/index.html');
-// });
-app.use(express.static(__dirname + '/build'));
-app.get('*', (req, res) => {
-	res.sendFile(__dirname + '/build/index.html');
-});
+const getLastMove = (engine) => {
+	let history = engine.history({ verbose: true });
+	let move = history[history.length - 1];
+	if (move == undefined) return undefined;
+	return {
+		color: move.color,
+		from: move.from,
+		to: move.to,
+		piece: move.piece,
+		captured: move.captured,
+		promotion: move.promotion,
+	};
+};
 
-server.listen(3000, () => {
-	console.log('listening on localhost:3000');
-});
+console.log();
 
-const io = require('socket.io')(server, {
-	cors: {
-		origins: '*:*',
-		methods: ['GET', 'POST'],
-	},
-});
+const clearAllRooms = (socket) => {
+	let currentRooms = Array.from(socket.rooms).filter((item) => item.startsWith('room.'));
+	if (currentRooms.length > 0) {
+		currentRooms.map((room) => {
+			socket.leave(room);
+		});
+		console.log(`Forcing out of ${currentRooms.length} room(s)...`);
+	}
+};
 
 const makeRoomCode = (length) => {
 	let result = '';
@@ -50,9 +58,9 @@ const makeRoomCode = (length) => {
 	return result;
 };
 
-// TODO: add piece promotion
-
 const getRoomsData = () => {
+	console.log(`Get rooms data:`);
+	console.log(Array.from(io.sockets.adapter.rooms));
 	return Array.from(io.sockets.adapter.rooms)
 		.map(([name, users]) => {
 			if (!name.startsWith('room.') || name == 'lobby') return;
@@ -62,7 +70,7 @@ const getRoomsData = () => {
 				id: id,
 				names: Array.from(users).map((user) => {
 					let socket = io.sockets.sockets.get(user);
-					return socket.data.name;
+					return { name: socket.data.name, color: socket.data.color };
 				}),
 			};
 		})
@@ -78,7 +86,83 @@ const informLobby = (socket) => {
 	io.in('lobby').emit('lobby-update', data);
 };
 
+const devInit = (socket) => {
+	let sockets = Array.from(io.sockets.sockets).map((e) => e[0]);
+
+	console.log(`Connected sockets: ${sockets.length} socket(s)`);
+	if (sockets.length == 1) {
+		console.log(`Create`);
+		socket.join(`room.asd`);
+		socket.data.color = 'w';
+		socket.data.engine = new Chess();
+		socket.data.started = false;
+		socket.data.name = 'john';
+	}
+
+	if (sockets.length == 2) {
+		let socket = io.sockets.sockets.get(sockets[1]);
+
+		console.log('Join');
+
+		let users = Array.from(Array.from(io.sockets.adapter.rooms).find(([name, users]) => name.startsWith('room.'))[1]);
+
+		socket.join(`room.asd`);
+		socket.data.color = 'b';
+		socket.data.engine = new Chess();
+		socket.data.started = false;
+		socket.data.name = 'bromine';
+
+		users = users.concat([socket.id]);
+		console.log(users);
+
+		// Start game if room is filled
+		users = users.map((id) => {
+			return [id, io.sockets.sockets.get(id)];
+		});
+
+		users.map(([id, user]) => {
+			setTimeout(function () {
+				console.log(user.data.color);
+				user.data.started = true;
+				user.leave('lobby');
+
+				io.to(id).emit('dev-start', {
+					last: getLastMove(user.data.engine),
+					board: user.data.engine.board(),
+					color: user.data.color,
+					legal:
+						user.data.engine.turn() == user.data.color
+							? user.data.engine.moves({ verbose: true }).map((move) => {
+									return { from: move.from, to: move.to };
+							  })
+							: [],
+					players: users.map(([_, user]) => user.data.name),
+					turn: user.data.engine.turn(),
+				});
+			}, 500);
+		});
+	}
+};
+
+const closeRoom = (roomName) => {
+	// If room does not exist
+	if (
+		!Array.from(io.sockets.adapter.rooms)
+			.map((room) => room[0])
+			.includes(roomName)
+	) {
+		return;
+	}
+
+	Array.from(io.sockets.adapter.rooms.get(roomName)).map((id) => {
+		let user = io.sockets.sockets.get(id);
+		user.leave(roomName);
+	});
+};
+
 io.on('connection', (socket) => {
+	// devInit(socket); // (dev)
+
 	console.log(`"${socket.id}" connected`);
 
 	socket.on('disconnect', () => {
@@ -103,6 +187,9 @@ io.on('connection', (socket) => {
 		if (roomName == undefined) return;
 
 		socket.to(roomName).emit('disconnection', { reason: 'voluntarily left' });
+		console.log(`"${socket.id}" exitted, closing room`);
+		// Close room
+		closeRoom(roomName);
 	});
 
 	socket.on('join-lobby', (callback) => {
@@ -112,6 +199,8 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('move', (data, callback) => {
+		if (socket.data.engine == undefined) return;
+
 		let { from, to, promotion } = data;
 
 		// If it isn't their turn, ignore
@@ -156,6 +245,7 @@ io.on('connection', (socket) => {
 
 				io.to(id).emit('update-board', {
 					// fen: user.data.engine.fen(),
+					last: getLastMove(user.data.engine),
 					board: user.data.engine.board(),
 					legal: null,
 					over: true,
@@ -163,9 +253,13 @@ io.on('connection', (socket) => {
 					players: users.map(([_, user]) => user.data.name),
 					turn: user.data.engine.turn(),
 				});
+
+				// Close room
+				closeRoom(roomName);
 			} else {
 				io.to(id).emit('update-board', {
 					// fen: user.data.engine.fen(),
+					last: getLastMove(user.data.engine),
 					board: user.data.engine.board(),
 					legal:
 						user.data.engine.turn() == user.data.color
@@ -208,6 +302,8 @@ io.on('connection', (socket) => {
 		// If room is full, ignore
 		if (users.length >= 2) return callback({ status: false, reason: 'Room occupied' });
 
+		clearAllRooms(socket);
+
 		let color = io.sockets.sockets.get(users[0]).data.color == 'w' ? 'b' : 'w';
 
 		socket.join(`room.${data.id}`);
@@ -229,6 +325,7 @@ io.on('connection', (socket) => {
 				user.leave('lobby');
 
 				io.to(id).emit('start', {
+					last: getLastMove(user.data.engine),
 					board: user.data.engine.board(),
 					color: user.data.color,
 					legal:
@@ -248,11 +345,13 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('create', (data, callback) => {
-		console.log('Create');
+		console.log('Creating a room');
+
+		clearAllRooms(socket);
 
 		let code = makeRoomCode(10);
 		socket.join(`room.${code}`);
-		socket.data.color = 'w';
+		socket.data.color = data.color;
 		socket.data.engine = new Chess();
 		socket.data.started = false;
 		socket.data.name = data.name || 'Unnamed';
@@ -261,3 +360,5 @@ io.on('connection', (socket) => {
 		callback(code);
 	});
 });
+
+server.listen(process.env.PORT || '9000');

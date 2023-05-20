@@ -22,6 +22,8 @@ import { useNavigate } from 'react-router-dom';
 // TODO: Add game history
 // TODO: Add ability to see all possible moves of a piece regards of legality while not in turn
 // TODO: Add ability to move back and forth between moves
+// TODO: Add highlight on last move
+// TODO: Add sounds
 
 function App() {
 	const navigate = useNavigate();
