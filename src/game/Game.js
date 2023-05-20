@@ -191,6 +191,10 @@ export default function Game() {
 		}, 10); // See a solution for this
 	};
 
+	const logAnimations = (animations) => {
+		return animations.map((a) => `${a.from}-${a.to}`).join(', ');
+	};
+
 	const onUpdateBoard = (data, color = undefined) => {
 		console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}):`);
 
@@ -214,8 +218,14 @@ export default function Game() {
 
 		if (data.last == undefined) return setState(object);
 
-		let client = _state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to).length > 0;
-		if (client) return setState(object);
+		// console.log(`Attempting to run animation from update-board...`);
+		// console.log(`path: ${data.last.from} -> ${data.last.to}`);
+		// console.log(`current animations: ${logAnimations(_state.current.animations)}`);
+		// console.log(`filtered animations with same path: ${logAnimations(_state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to))}`);
+
+		if (_state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
+		// let client = _state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to).length > 0;
+		// if (client) return setState(object);
 
 		createAnimation(data.last, object);
 
@@ -270,7 +280,9 @@ export default function Game() {
 			// 	...data,
 			// 	board: board,
 			// });
-			onUpdateBoard(data);
+			setTimeout(function () {
+				onUpdateBoard(data);
+			}, 20);
 		});
 
 		socket.on('connect_error', () => {

@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.dfc43932.css",
-    "main.js": "/static/js/main.77f73bba.js",
+    "main.css": "/static/css/main.4771ec92.css",
+    "main.js": "/static/js/main.5aeb5f72.js",
     "static/media/chess-board.svg": "/static/media/chess-board.865ceefda74d228e4edfaced453b9f6b.svg",
     "static/media/br.svg": "/static/media/br.99c0ce7e539f599ba538.svg",
     "static/media/bn.svg": "/static/media/bn.b26069c4abd36f8d2f32.svg",
@@ -16,16 +16,16 @@
     "static/media/bp.svg": "/static/media/bp.11e2e74a2b7ae839e023.svg",
     "static/media/wp.svg": "/static/media/wp.d0bc0ccf34f559c73a5a.svg",
     "static/media/wk.svg": "/static/media/wk.88d49eae86c771606ff9.svg",
+    "index.html": "/index.html",
     "static/media/person.svg": "/static/media/person.86f75a5d6bbb1f5cff2f.svg",
     "static/media/people.svg": "/static/media/people.f5a643e363e2a03e5bd9.svg",
-    "index.html": "/index.html",
-    "static/media/stroke-circle.svg": "/static/media/stroke-circle.4da3d19c4fbb0d709b28e9453b49458d.svg",
-    "static/media/fill-circle.svg": "/static/media/fill-circle.aea85b5c59da0db759b650afb98548c7.svg",
-    "main.dfc43932.css.map": "/static/css/main.dfc43932.css.map",
-    "main.77f73bba.js.map": "/static/js/main.77f73bba.js.map"
+    "static/media/stroke-circle.svg": "/static/media/stroke-circle.ffd730b2d997efa81d8365b46b0d475d.svg",
+    "static/media/fill-circle.svg": "/static/media/fill-circle.09195f9a40ab6a7aeb3b80b557e6e441.svg",
+    "main.4771ec92.css.map": "/static/css/main.4771ec92.css.map",
+    "main.5aeb5f72.js.map": "/static/js/main.5aeb5f72.js.map"
   },
   "entrypoints": [
-    "static/css/main.dfc43932.css",
-    "static/js/main.77f73bba.js"
+    "static/css/main.4771ec92.css",
+    "static/js/main.5aeb5f72.js"
   ]
 }
