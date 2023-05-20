@@ -223,7 +223,7 @@ export default function Game() {
 		// console.log(`current animations: ${logAnimations(_state.current.animations)}`);
 		// console.log(`filtered animations with same path: ${logAnimations(_state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to))}`);
 
-		if (_state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
+		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
 		// let client = _state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to).length > 0;
 		// if (client) return setState(object);
 
@@ -280,9 +280,7 @@ export default function Game() {
 			// 	...data,
 			// 	board: board,
 			// });
-			setTimeout(function () {
-				onUpdateBoard(data);
-			}, 20);
+			onUpdateBoard(data);
 		});
 
 		socket.on('connect_error', () => {
