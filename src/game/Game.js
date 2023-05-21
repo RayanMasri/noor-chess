@@ -13,9 +13,9 @@ const engine = new Chess();
 // console.log(engine.moves({ verbose: true }));
 
 // FIXME: Maybe try making transitions from board updates?
-// TODO: Handle multiple animations
-// FIXME: Incorrect click positions for smaller screen, squares (not clicking on highlight icon)
-// TODO: Scale row/rank indicators and highlight icons with inner width
+// TODO: Handle multiple animations *
+// FIXME: Incorrect click positions for smaller screen, squares (not clicking on highlight icon) *
+// TODO: Scale row/rank indicators and highlight icons with inner width *
 // TODO: Handle conflict from same move client/server animation
 // FIXME: Cancel all animations that arrive at the same destination when creating a new animation
 // FIXME: Ability to move client-side while not in turn
@@ -280,7 +280,9 @@ export default function Game() {
 			// 	...data,
 			// 	board: board,
 			// });
-			onUpdateBoard(data);
+			setTimeout(function () {
+				onUpdateBoard(data);
+			}, 10);
 		});
 
 		socket.on('connect_error', () => {
