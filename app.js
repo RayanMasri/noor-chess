@@ -1,6 +1,13 @@
 const { server, io } = require('./load.js');
 
 const { Chess } = require('chess.js');
+let engine = new Chess();
+
+// console.log(user.data.engine.board());
+// console.log(user.data.engine.moves({ verbose: true }).map((move) => {
+// 				return { from: move.from, to: move.to };
+// 		  })
+// 		: [],
 
 // console.log(engine.history({ verbose: true }));
 // Create a new Chess instance
@@ -8,7 +15,7 @@ const { Chess } = require('chess.js');
 // engine.move({ from: 'd2', to: 'd1', promotion: 'b' });
 // console.log(
 // 	JSON.stringify({
-// 		board: engine.board(),
+// 		pieces: engine.board(),
 // 		legal: engine.moves({ verbose: true }),
 // 	})
 // );
@@ -130,6 +137,7 @@ const devInit = (socket) => {
 					last: getLastMove(user.data.engine),
 					board: user.data.engine.board(),
 					color: user.data.color,
+					name: user.data.name,
 					legal:
 						user.data.engine.turn() == user.data.color
 							? user.data.engine.moves({ verbose: true }).map((move) => {
@@ -328,6 +336,7 @@ io.on('connection', (socket) => {
 					last: getLastMove(user.data.engine),
 					board: user.data.engine.board(),
 					color: user.data.color,
+					name: user.data.name,
 					legal:
 						user.data.engine.turn() == user.data.color
 							? user.data.engine.moves({ verbose: true }).map((move) => {

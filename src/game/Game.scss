@@ -18,7 +18,7 @@ $board-size: 640px;
 
 	.side {
 		height: 100%;
-		width: 300px;
+		width: max-content;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
@@ -69,13 +69,6 @@ $board-size: 640px;
 		box-sizing: border-box;
 		border-bottom-left-radius: 10px;
 		border-bottom-right-radius: 10px;
-	}
-
-	#center {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
 	}
 
 	#outer-board {
@@ -160,6 +153,72 @@ $board-size: 640px;
 	// #board > .square:nth-child(8) {
 	// 	border-top-right-radius: 5px;
 	// }
+
+	#center {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		margin-left: 400px;
+	}
+
+	.control {
+		width: 400px;
+		height: max-content;
+		display: flex;
+		flex-direction: column;
+		color: white;
+		justify-content: center;
+		align-items: flex-start;
+		font-size: 30px;
+		border-radius: 5px;
+		margin-left: 20px;
+
+		.piece-log {
+			display: flex;
+			justify-content: flex-start;
+			align-items: center;
+			flex-wrap: wrap;
+			width: 100%;
+			padding: 0px 10px 0px 10px;
+		}
+
+		// .piece-log.top {
+		// 	padding-bottom: 5px;
+		// }
+		// .piece-log.bottom {
+		// 	padding-top: 5px;
+		// }
+
+		.piece-log > img {
+			width: 48px;
+			height: 48px;
+		}
+
+		.inner {
+			margin: 10px 0px 10px 0px;
+			width: 100%;
+			height: max-content;
+			display: flex;
+			flex-direction: column;
+			background-color: rgb(45, 45, 45);
+			padding: 15px 10px 15px 10px;
+			color: white;
+			justify-content: center;
+			align-items: flex-start;
+			font-size: 30px;
+			border-radius: 5px;
+		}
+
+		.inner > .name {
+			margin-left: 15px;
+		}
+
+		.inner > .MuiDivider-root {
+			margin: 10px 0px 10px 0px;
+		}
+	}
+
 	.piece {
 		position: absolute;
 		width: $board-size / 8;

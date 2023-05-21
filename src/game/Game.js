@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { socket } from '../socket.js';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconButton } from '@mui/material';
+import { IconButton, Divider } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { v4 as uuidv4 } from 'uuid';
 import './Game.scss';
@@ -43,6 +43,7 @@ export default function Game() {
 	const navigate = useNavigate();
 	const [state, _setState] = useState({
 		selected: null,
+
 		legal: [],
 		pieces: [],
 
@@ -60,6 +61,7 @@ export default function Game() {
 		players: [],
 		gameOver: true,
 		cellSize: 80,
+		name: '',
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -195,8 +197,8 @@ export default function Game() {
 		return animations.map((a) => `${a.from}-${a.to}`).join(', ');
 	};
 
-	const onUpdateBoard = (data, color = undefined) => {
-		console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}):`);
+	const onUpdateBoard = (data, color = undefined, name = undefined) => {
+		console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}) (${name} -> ${name != undefined ? name : _state.current.name})`);
 
 		let object = {
 			..._state.current,
@@ -205,6 +207,7 @@ export default function Game() {
 			overlay: data.over,
 			overlayMessage: data.over ? data.reason : '',
 			color: color != undefined ? color : _state.current.color,
+			name: name != undefined ? name : _state.current.name,
 			players: data.players,
 			turn: data.turn,
 			gameOver: data.over,
@@ -326,7 +329,7 @@ export default function Game() {
 		});
 
 		if (location.state == null) return;
-		onUpdateBoard(location.state, location.state.color);
+		onUpdateBoard(location.state, location.state.color, location.state.name);
 	}, []);
 
 	const copyBoard = (board) => {
@@ -505,6 +508,42 @@ export default function Game() {
 		return background;
 	};
 
+	const calculateScores = () => {
+		try {
+			let pieces = state.pieces.flat();
+
+			let scores = {
+				'p': { dominance: null, occurences: 0 },
+				'q': { dominance: null, occurences: 0 },
+				'b': { dominance: null, occurences: 0 },
+				'n': { dominance: null, occurences: 0 },
+				'r': { dominance: null, occurences: 0 },
+			};
+
+			for (let name of Object.keys(scores)) {
+				let black = pieces.filter((piece) => piece != null && piece.color == 'b' && piece.type == name).length;
+				let white = pieces.filter((piece) => piece != null && piece.color == 'w' && piece.type == name).length;
+
+				let dominance = black == white ? null : black > white ? 'b' : 'w';
+				let occurences = Math.abs(black - white);
+
+				scores[name] = { dominance: dominance, occurences: occurences };
+			}
+
+			return scores;
+		} catch (e) {
+			console.error(e.toString());
+			return {};
+		}
+	};
+
+	const getOpponentName = () => {
+		let opponent = state.players.filter((player) => player != state.name);
+		if (opponent.length != 0) return opponent[0];
+
+		return state.players[0];
+	};
+
 	return (
 		<div id='game' className='page'>
 			<div id='main'>
@@ -646,6 +685,54 @@ export default function Game() {
 					<div id='footer'>{state.turn == 'b' ? "Black's turn" : "White's turn"}</div>
 				</div>
 				<div id='right' className='side'>
+					<div className='control'>
+						<div className='piece-log'>
+							{/* {'ppppppppqkbbnnrr'
+								.split('')
+								.map((piece) => `b${piece}`)
+								.map((name) => {
+									return <img src={require(`../icons/${name}.svg`)}></img>;
+								})} */}
+							{Object.entries(calculateScores())
+								.map(([key, value]) => {
+									if (value.dominance == state.color || value.dominance == null) return;
+
+									let pieces = [];
+									for (let i = 0; i < value.occurences; i++) {
+										pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
+									}
+									return pieces;
+								})
+								.flat()
+								.filter((e) => e)}
+						</div>
+						<div className='inner'>
+							<div className='name'>{getOpponentName()}</div>
+							<Divider style={{ width: '100%', backgroundColor: 'white' }} />
+							<div className='name'>{state.name}</div>
+						</div>
+						{/* you is always at the bottom */}
+						<div className='piece-log'>
+							{Object.entries(calculateScores())
+								.map(([key, value]) => {
+									if (value.dominance != state.color || value.dominance == null) return;
+									console.log([key, value]);
+									let pieces = [];
+									for (let i = 0; i < value.occurences; i++) {
+										pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
+									}
+									return pieces;
+								})
+								.flat()
+								.filter((e) => e)}
+							{/* {'pppppqknnrr'
+								.split('')
+								.map((piece) => `w${piece}`)
+								.map((name) => {
+									return <img src={require(`../icons/${name}.svg`)}></img>;
+								})} */}
+						</div>
+					</div>
 					{/* {getMissing(
 						state.pieces
 							.flat()
