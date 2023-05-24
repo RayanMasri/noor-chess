@@ -2,6 +2,7 @@ const { server, io } = require('./load.js');
 
 const { Chess } = require('chess.js');
 let engine = new Chess();
+let maxTime = 300;
 
 // console.log(user.data.engine.board());
 // console.log(user.data.engine.moves({ verbose: true }).map((move) => {
@@ -168,6 +169,40 @@ const closeRoom = (roomName) => {
 	});
 };
 
+let timeoutWaiter = null; //FIXME: Make one for every room, or in socket.data, or just make room objects
+
+const timeoutWin = (loser) => {
+	let reason = `Ended: Timeout win - ${loser.data.color == 'w' ? 'Black' : 'White'} has won`;
+
+	let room = Array.from(io.sockets.adapter.rooms).find((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(loser.id));
+	let users = Array.from(room[1]);
+
+	users = users.map((id) => {
+		return [id, io.sockets.sockets.get(id)];
+	});
+
+	users.map(([id, user]) => {
+		io.to(id).emit('update-board', {
+			// fen: user.data.engine.fen(),
+			last: getLastMove(user.data.engine),
+			board: user.data.engine.board(),
+			legal: null,
+			over: true,
+			times: [],
+			reason: reason,
+			players: users.map(([_, user]) => user.data.name),
+			turn: user.data.engine.turn(),
+		});
+	});
+
+	// console.log(room);
+	// console.log(users);
+	// users.map(([id, user]) => {
+	// user.data.engine.move(data);
+
+	// console.log(`KILL OPPONENT ${loser.id}`);
+};
+
 io.on('connection', (socket) => {
 	// devInit(socket); // (dev)
 
@@ -228,6 +263,29 @@ io.on('connection', (socket) => {
 			return [id, io.sockets.sockets.get(id)];
 		});
 
+		if (timeoutWaiter != null) clearTimeout(timeoutWaiter);
+
+		socket.data.time = {
+			passed: socket.data.time.passed + Date.now() - socket.data.time.count,
+			count: null,
+		};
+
+		let [_, opponent] = users.find(([id, _]) => id != socket.id);
+		opponent.data.time = {
+			passed: opponent.data.time.passed,
+			count: Date.now(),
+		};
+
+		timeoutWaiter = setTimeout(() => {
+			timeoutWin(opponent);
+
+			// console.log('KILL OPPONENT');
+		}, maxTime * 1000 - opponent.data.time.passed);
+
+		let times = users.map(([_, user]) => {
+			return { time: user.data.time, id: user.id };
+		});
+
 		users.map(([id, user]) => {
 			user.data.engine.move(data);
 			if (user.data.engine.isGameOver()) {
@@ -257,6 +315,7 @@ io.on('connection', (socket) => {
 					board: user.data.engine.board(),
 					legal: null,
 					over: true,
+					times: times,
 					reason: reason,
 					players: users.map(([_, user]) => user.data.name),
 					turn: user.data.engine.turn(),
@@ -275,6 +334,7 @@ io.on('connection', (socket) => {
 									return { from: move.from, to: move.to };
 							  })
 							: [],
+					times: times,
 					over: false,
 					players: users.map(([_, user]) => user.data.name),
 					turn: user.data.engine.turn(),
@@ -319,13 +379,35 @@ io.on('connection', (socket) => {
 		socket.data.engine = new Chess();
 		socket.data.started = false;
 		socket.data.name = data.name || 'Unnamed';
+		socket.data.time = {
+			passed: 0,
+			count: null,
+		};
 
 		users = users.concat([socket.id]);
 
 		// Start game if room is filled
 		if (users.length == 2) {
+			if (timeoutWaiter != null) clearTimeout(timeoutWaiter);
+
 			users = users.map((id) => {
-				return [id, io.sockets.sockets.get(id)];
+				let user = io.sockets.sockets.get(id);
+				if (user.data.color == 'w') {
+					user.data.time = {
+						passed: 0,
+						count: Date.now(),
+					};
+				}
+				return [id, user];
+			});
+
+			timeoutWaiter = setTimeout(function () {
+				let [_, loser] = users.find(([id, user]) => user.data.color == 'w');
+				timeoutWin(loser);
+			}, maxTime * 1000);
+
+			let times = users.map(([_, user]) => {
+				return { time: user.data.time, id: user.id };
 			});
 
 			users.map(([id, user]) => {
@@ -337,6 +419,7 @@ io.on('connection', (socket) => {
 					board: user.data.engine.board(),
 					color: user.data.color,
 					name: user.data.name,
+					times: times,
 					legal:
 						user.data.engine.turn() == user.data.color
 							? user.data.engine.moves({ verbose: true }).map((move) => {
@@ -364,6 +447,10 @@ io.on('connection', (socket) => {
 		socket.data.engine = new Chess();
 		socket.data.started = false;
 		socket.data.name = data.name || 'Unnamed';
+		socket.data.time = {
+			passed: 0,
+			count: null,
+		};
 
 		informLobby();
 		callback(code);

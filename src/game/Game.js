@@ -25,6 +25,8 @@ const engine = new Chess();
 const animationTime = 0.25; // in seconds
 // const animationSpeed = 900; // pixel per second
 
+let maxTime = 300;
+
 class Board {
 	constructor(props) {
 		this.board = props.board;
@@ -55,13 +57,15 @@ export default function Game() {
 		animation: null,
 		animationTimeout: null,
 		animations: [],
-
+		times: [],
 		color: 'w',
 		// players: ['Loading...', 'Loading...'], // (dev)
 		players: [],
 		gameOver: true,
 		cellSize: 80,
 		name: '',
+		timeInterval: null,
+		timeText: ['5:00', '5:00'], // [<player>, <opponent>]
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -208,11 +212,52 @@ export default function Game() {
 			overlayMessage: data.over ? data.reason : '',
 			color: color != undefined ? color : _state.current.color,
 			name: name != undefined ? name : _state.current.name,
+			times: data.times,
 			players: data.players,
 			turn: data.turn,
 			gameOver: data.over,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
 		};
+
+		if (_state.current.timeInterval != null) clearInterval(_state.current.timeInterval);
+		if (data.over) return setState(object);
+		console.log('JOOOOOOOOOOOOOOOOOHn');
+		console.log(data.times);
+		for (let time of data.times) {
+			let player = time.id == socket.id;
+
+			console.log(time);
+			console.log(time.time.count);
+			console.log(player);
+
+			if (time.time.count != null) {
+				object.timeInterval = setInterval(() => {
+					console.log(`INTERVAL`);
+					let timeText = _state.current.timeText;
+					console.log(timeText);
+					let passed = (Date.now() - time.time.count) / 1000 + time.time.passed / 1000;
+					console.log(passed);
+
+					let seconds = maxTime - passed;
+					let minutes = Math.floor(seconds / 60);
+					seconds = Math.floor(seconds - minutes * 60);
+					seconds = seconds.toString().padStart(2, '0');
+
+					timeText[player ? 0 : 1] = `${minutes}:${seconds}`;
+					console.log(timeText);
+
+					// maxTime;
+
+					setState({
+						..._state.current,
+						timeText: timeText,
+					});
+				}, 1000);
+			}
+
+			// console.warn();
+			// console.warn(time);
+		}
 
 		// Remove illegal pre-highlights
 		if (data.turn == _state.current.color) {
@@ -707,9 +752,15 @@ export default function Game() {
 								.filter((e) => e)}
 						</div>
 						<div className='inner'>
-							<div className='name'>{getOpponentName()}</div>
+							<div className='name'>
+								<div>{getOpponentName()}</div>
+								<div>{state.timeText[1]}</div>
+							</div>
 							<Divider style={{ width: '100%', backgroundColor: 'white' }} />
-							<div className='name'>{state.name}</div>
+							<div className='name'>
+								<div>{state.name}</div>
+								<div>{state.timeText[0]}</div>
+							</div>
 						</div>
 						{/* you is always at the bottom */}
 						<div className='piece-log'>
@@ -725,6 +776,7 @@ export default function Game() {
 								})
 								.flat()
 								.filter((e) => e)}
+
 							{/* {'pppppqknnrr'
 								.split('')
 								.map((piece) => `w${piece}`)
