@@ -1,8 +1,20 @@
 const { server, io } = require('./load.js');
 
 const { Chess } = require('chess.js');
-let engine = new Chess();
+// let engine = new Chess();
 let maxTime = 300;
+
+const makeRoomCode = (length) => {
+	let result = '';
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	const charactersLength = characters.length;
+	let counter = 0;
+	while (counter < length) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		counter += 1;
+	}
+	return result;
+};
 
 // console.log(user.data.engine.board());
 // console.log(user.data.engine.moves({ verbose: true }).map((move) => {
@@ -28,6 +40,192 @@ let maxTime = 300;
 // TODO: Handle same browser login
 // TODO: add piece promotion
 
+// FIXME: If a user has a created room and joins another room, close that created room (this also prevents other users from making rooms for some reason)
+// FIXME: Prevent a user from making multiple rooms by clearing all owned rooms when creating new rooms
+
+let rooms = {};
+const getSocketById = (id) => io.sockets.sockets.get(id);
+
+const generateRoom = (creator, name, color, time) => {
+	let code = makeRoomCode(10);
+
+	rooms[code] = {
+		started: false,
+		ended: false,
+		engine: new Chess(),
+		timeout: null,
+		duration: time, // Seconds
+		time: {
+			from: null, // Date to count down from
+			directed: null, // Id of socket that has a turn
+		},
+		players: {
+			[creator]: {
+				name: name,
+				color: color,
+				elapsed: 0,
+			},
+		},
+	};
+
+	return code;
+};
+
+const enterRoom = (joiner, room, name, color) => {
+	let socket = getSocketById(joiner);
+
+	socket.join(`room.${room}`);
+
+	rooms[room] = {
+		...rooms[room],
+		started: true,
+		ended: false,
+		players: {
+			...rooms[room].players,
+			[joiner]: {
+				name: name,
+				color: color,
+				elapsed: 0,
+			},
+		},
+	};
+};
+
+const getEngineResult = (engine) => {
+	let over = engine.isGameOver();
+	let reason = null;
+	if (over) {
+		let report = {
+			'Stalemate': engine.isStalemate(),
+			'Insufficient Material': engine.isInsufficientMaterial(),
+			'Threefold Repetition': engine.isThreefoldRepetition(),
+			'50-move Rule': engine.isDraw(),
+		};
+
+		reason = 'Ended: ';
+
+		if (engine.isCheckmate()) {
+			reason += `Checkmate - ${engine.turn() == 'w' ? 'Black' : 'White'} has won`;
+		} else {
+			let [name, _] = Object.entries(report).find(([name, result]) => result);
+			reason += name;
+		}
+	}
+
+	return { over: over, reason: reason };
+};
+
+const getBoardUpdateObject = (engine, room, playerData) => {
+	return {
+		last: getLastMove(engine),
+		board: engine.board(),
+		timeInfo: {
+			...room.time,
+			duration: room.duration,
+			players: Object.entries(room.players).map(([id, data]) => {
+				return { id: id, elapsed: data.elapsed };
+			}),
+		},
+		legal:
+			engine.turn() == playerData.color
+				? engine.moves({ verbose: true }).map((move) => {
+						return { from: move.from, to: move.to };
+				  })
+				: [],
+		players: Object.entries(room.players).map(([id, data]) => {
+			return {
+				id: id,
+				name: data.name,
+			};
+		}),
+		turn: engine.turn(),
+		result: { over: false, result: null },
+	};
+};
+
+const timerLose = (playerId) => {
+	// Get player room
+	let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(playerId));
+	if (result == undefined) return console.log(`GAME-ACTIVITY: Failed to timer lose player "${playerId}": not in room`);
+	let [roomId, room] = result;
+
+	// Get player data
+	let player = room.players[playerId];
+
+	// Stop if game has already ended
+	if (getEngineResult(room.engine).over) return console.log(`GAME-ACTIVITY: Failed to timer lose player "${playerId}": game has ended`);
+
+	// Update board with new defeated data
+	Object.entries(room.players).map(([userId, data]) => {
+		let engine = room.engine;
+
+		let object = getBoardUpdateObject(engine, room, data);
+		object.result = { over: true, reason: `Ended: Timeout win - ${player.color == 'w' ? 'Black' : 'White'} has won` };
+
+		io.to(userId).emit('update-board', object);
+	});
+
+	room.ended = true;
+
+	informLobby();
+	closeRoom(`room.${roomId}`);
+};
+
+const informRoom = (id, init = false) => {
+	Object.entries(rooms[id].players).map(([userId, data]) => {
+		// console.log(userId);
+		// Constant Update Variables:
+		// .last, .board, .legal, .timeInfo, .players, .turn, .over, .result
+
+		// Initialization Variables
+		// .name, .color
+
+		// Game Over Variables
+		// .result, .legal
+
+		let engine = rooms[id].engine;
+
+		let object = getBoardUpdateObject(engine, rooms[id], data);
+		// console.log(object);
+		let result = getEngineResult(engine);
+		if (result.over) object.legal = null;
+		object.result = result;
+
+		if (init) {
+			object.color = data.color;
+			object.name = data.name;
+		}
+
+		io.to(userId).emit(init ? 'start' : 'update-board', object);
+	});
+};
+
+const initializeRoom = (id) => {
+	// Start counting time for white player
+	let white = Object.entries(rooms[id].players).find(([id, data]) => data.color == 'w')[0];
+	rooms[id].time = {
+		from: Date.now(),
+		directed: white, // Socket ID
+	};
+
+	// Create defeat timeout for white
+	rooms[id].timeout = setTimeout(() => {
+		timerLose(white);
+	}, rooms[id].duration * 1000);
+
+	// Start room
+	rooms[id].started = true;
+
+	// Force all players out of lobby room
+	Object.keys(rooms[id].players).map((id) => {
+		let user = getSocketById(id);
+		user.leave('lobby');
+	});
+
+	// Inform all users of updated data
+	informRoom(id, true);
+};
+
 const getLastMove = (engine) => {
 	let history = engine.history({ verbose: true });
 	let move = history[history.length - 1];
@@ -42,8 +240,6 @@ const getLastMove = (engine) => {
 	};
 };
 
-console.log();
-
 const clearAllRooms = (socket) => {
 	let currentRooms = Array.from(socket.rooms).filter((item) => item.startsWith('room.'));
 	if (currentRooms.length > 0) {
@@ -54,103 +250,44 @@ const clearAllRooms = (socket) => {
 	}
 };
 
-const makeRoomCode = (length) => {
-	let result = '';
-	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	const charactersLength = characters.length;
-	let counter = 0;
-	while (counter < length) {
-		result += characters.charAt(Math.floor(Math.random() * charactersLength));
-		counter += 1;
-	}
-	return result;
-};
-
 const getRoomsData = () => {
-	console.log(`Get rooms data:`);
-	console.log(Array.from(io.sockets.adapter.rooms));
-	return Array.from(io.sockets.adapter.rooms)
-		.map(([name, users]) => {
-			if (!name.startsWith('room.') || name == 'lobby') return;
+	Object.entries(rooms).map(([id, data]) => {
+		console.log(`${id} - ${data.ended}`);
+	});
 
-			let id = name.split('.')[1];
+	return Object.entries(rooms)
+		.filter(([id, data]) => !data.ended)
+		.map(([id, data]) => {
 			return {
 				id: id,
-				names: Array.from(users).map((user) => {
-					let socket = io.sockets.sockets.get(user);
-					return { name: socket.data.name, color: socket.data.color };
-				}),
+				names: Object.values(data.players),
 			};
-		})
-		.filter((room) => room);
+		});
+
+	// console.log(`Get rooms data:`);
+	// console.log(Array.from(io.sockets.adapter.rooms));
+	// return Array.from(io.sockets.adapter.rooms)
+	// 	.map(([name, users]) => {
+	// 		if (!name.startsWith('room.') || name == 'lobby') return;
+
+	// 		let id = name.split('.')[1];
+	// 		return {
+	// 			id: id,
+	// 			names: Array.from(users).map((user) => {
+	// 				let socket = io.sockets.sockets.get(user);
+	// 				return { name: socket.data.name, color: socket.data.color };
+	// 			}),
+	// 		};
+	// 	})
+	// 	.filter((room) => room);
 };
 
-const informLobby = (socket) => {
+const informLobby = () => {
 	let data = getRoomsData();
 
-	console.log(`Informing lobby of this data:`);
-	console.log(data);
+	console.log(`ROOM-ACTIVITY: Informing lobby of updated room data`);
 
 	io.in('lobby').emit('lobby-update', data);
-};
-
-const devInit = (socket) => {
-	let sockets = Array.from(io.sockets.sockets).map((e) => e[0]);
-
-	console.log(`Connected sockets: ${sockets.length} socket(s)`);
-	if (sockets.length == 1) {
-		console.log(`Create`);
-		socket.join(`room.asd`);
-		socket.data.color = 'w';
-		socket.data.engine = new Chess();
-		socket.data.started = false;
-		socket.data.name = 'john';
-	}
-
-	if (sockets.length == 2) {
-		let socket = io.sockets.sockets.get(sockets[1]);
-
-		console.log('Join');
-
-		let users = Array.from(Array.from(io.sockets.adapter.rooms).find(([name, users]) => name.startsWith('room.'))[1]);
-
-		socket.join(`room.asd`);
-		socket.data.color = 'b';
-		socket.data.engine = new Chess();
-		socket.data.started = false;
-		socket.data.name = 'bromine';
-
-		users = users.concat([socket.id]);
-		console.log(users);
-
-		// Start game if room is filled
-		users = users.map((id) => {
-			return [id, io.sockets.sockets.get(id)];
-		});
-
-		users.map(([id, user]) => {
-			setTimeout(function () {
-				console.log(user.data.color);
-				user.data.started = true;
-				user.leave('lobby');
-
-				io.to(id).emit('dev-start', {
-					last: getLastMove(user.data.engine),
-					board: user.data.engine.board(),
-					color: user.data.color,
-					name: user.data.name,
-					legal:
-						user.data.engine.turn() == user.data.color
-							? user.data.engine.moves({ verbose: true }).map((move) => {
-									return { from: move.from, to: move.to };
-							  })
-							: [],
-					players: users.map(([_, user]) => user.data.name),
-					turn: user.data.engine.turn(),
-				});
-			}, 500);
-		});
-	}
 };
 
 const closeRoom = (roomName) => {
@@ -163,294 +300,200 @@ const closeRoom = (roomName) => {
 		return;
 	}
 
+	let roomId = roomName.split('room.')[1];
+
+	console.log(`ROOM-ACTIVITY: Closing room ${roomId}`);
+
 	Array.from(io.sockets.adapter.rooms.get(roomName)).map((id) => {
 		let user = io.sockets.sockets.get(id);
 		user.leave(roomName);
 	});
+
+	if (Object.keys(rooms).includes(roomId)) {
+		delete rooms[roomId];
+	}
 };
 
-let timeoutWaiter = null; //FIXME: Make one for every room, or in socket.data, or just make room objects
+// TODO: Modularize wins
 
-const timeoutWin = (loser) => {
-	let reason = `Ended: Timeout win - ${loser.data.color == 'w' ? 'Black' : 'White'} has won`;
+// Returns validity of attempt, and list of IDs of sockets present in room
+const isJoinValid = (data, id) => {
+	if (!Object.keys(data).includes('id')) return [false, null];
 
-	let room = Array.from(io.sockets.adapter.rooms).find((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(loser.id));
+	// Check if room exists
+	let room = Array.from(io.sockets.adapter.rooms).find(([name, users]) => {
+		if (!name.startsWith('room.')) return false;
+		return name.split('room.')[1] == data.id;
+	});
+
+	if (room == undefined) return [false, null];
+
 	let users = Array.from(room[1]);
 
-	users = users.map((id) => {
-		return [id, io.sockets.sockets.get(id)];
-	});
+	// If already in room, ignore
+	if (users.includes(id)) return [false, null];
 
-	users.map(([id, user]) => {
-		io.to(id).emit('update-board', {
-			// fen: user.data.engine.fen(),
-			last: getLastMove(user.data.engine),
-			board: user.data.engine.board(),
-			legal: null,
-			over: true,
-			times: [],
-			reason: reason,
-			players: users.map(([_, user]) => user.data.name),
-			turn: user.data.engine.turn(),
-		});
-	});
+	// If room is full, ignore
+	if (users.length >= 2) return [false, null];
 
-	// console.log(room);
-	// console.log(users);
-	// users.map(([id, user]) => {
-	// user.data.engine.move(data);
-
-	// console.log(`KILL OPPONENT ${loser.id}`);
+	console.log(`ROOM-ACTIVITY: User "${id}" has successfully joined room "${data.id}"`);
+	return [true, users];
 };
 
 io.on('connection', (socket) => {
-	// devInit(socket); // (dev)
+	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
-	console.log(`"${socket.id}" connected`);
-
-	socket.on('disconnect', () => {
-		console.log(`"${socket.id}" disconnected`);
-		// Check rooms with single users that have started a game
-		Array.from(io.sockets.adapter.rooms).map(([name, users]) => {
-			if (!name.startsWith('room.')) return;
-
-			users = Array.from(users);
-			if (users.length != 1) return;
-
-			if (io.sockets.sockets.get(users[0]).data.started) {
-				io.to(users[0]).emit('disconnection', { reason: 'disconnected' });
-			}
-		});
-
-		// console.log(Array.from(io.sockets.adapter.rooms));
+	socket.on('error', (err) => {
+		console.log(err.toString());
 	});
 
-	socket.on('exit', () => {
-		let roomName = Array.from(socket.rooms).find((room) => room.startsWith('room.'));
-		if (roomName == undefined) return;
+	// Unreceived exit (browser close, refresh, etc...)
+	socket.on('disconnect', () => {
+		console.log(`USER-ACTIVITY: User "${socket.id}" has disconnected from server`);
 
-		socket.to(roomName).emit('disconnection', { reason: 'voluntarily left' });
-		console.log(`"${socket.id}" exitted, closing room`);
+		// Find user room
+		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
+		if (result == undefined) return;
+		let [id, room] = result;
+
+		if (room.ended) return;
+
+		// Inform remaining players of disconnection
+		console.log(`GAME-ACTIVITY: Informing remaining players in abandoned room "${id}" by user "${socket.id}"`);
+		Object.keys(room.players)
+			.filter((player) => player != socket.id)
+			.map((user) => {
+				io.to(user).emit('disconnection', { reason: 'disconnected', name: room.players[socket.id].name });
+			});
+
+		room.ended = true;
+
 		// Close room
-		closeRoom(roomName);
+		closeRoom(`room.${id}`);
+		informLobby();
+	});
+
+	// Received exit (through game UI)
+	socket.on('exit', () => {
+		// Find user room
+		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
+		if (result == undefined) return;
+		let [id, room] = result;
+
+		if (room.ended) return;
+
+		console.log(`USER-ACTIVITY: User "${socket.id}" has voluntarily left room "${id}"`);
+
+		// Inform remaining players of disconnection
+		console.log(`GAME-ACTIVITY: Informing remaining players in abandoned room "${id}" by user "${socket.id}"`);
+		Object.keys(room.players)
+			.filter((player) => player != socket.id)
+			.map((user) => {
+				io.to(user).emit('disconnection', { reason: 'voluntarily left', name: room.players[socket.id].name });
+			});
+
+		room.ended = true;
+
+		// Close room
+		closeRoom(`room.${id}`);
+		informLobby();
 	});
 
 	socket.on('join-lobby', (callback) => {
-		console.log('join-lobby');
+		console.log(`USER-ACTIVITY: User "${socket.id}" has joined the lobby`);
 		socket.join('lobby');
+
 		callback(getRoomsData());
 	});
 
 	socket.on('move', (data, callback) => {
-		if (socket.data.engine == undefined) return;
-
 		let { from, to, promotion } = data;
 
-		// If it isn't their turn, ignore
-		if (socket.data.engine.turn() != socket.data.color) return callback({ status: false, reason: 'Not your turn' });
+		// Get user room
+		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
+		if (result == undefined) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: not in room`);
+		let [roomId, room] = result;
 
-		// Check if move is legal
-		let legal = socket.data.engine.moves({ verbose: true }).filter((move) => move.from == from);
-		if (legal.length == 0) return callback({ status: false, reason: 'Illegal move' });
-		legal = legal.filter((move) => move.to == to);
-		if (legal.length == 0) return callback({ status: false, reason: 'Illegal move' });
+		// Get player data
+		let player = room.players[socket.id];
 
-		// Send move to all users in room
-		let roomName = Array.from(socket.rooms).find((room) => room.startsWith('room.'));
-		if (roomName == undefined) return callback({ status: false, reason: 'Not in-game' });
-		let room = Array.from(io.sockets.adapter.rooms).find(([room, users]) => room == roomName);
-		let users = Array.from(room[1]).map((id) => {
-			return [id, io.sockets.sockets.get(id)];
-		});
+		// If not turn, ignore
+		if (room.engine.turn() != player.color) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: not in turn`);
 
-		if (timeoutWaiter != null) clearTimeout(timeoutWaiter);
+		// If move is illegal, ignore
+		let moveLegal = room.engine.moves({ verbose: true }).find((move) => move.from == from && move.to == to) != undefined;
+		if (!moveLegal) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: illegal move`);
 
-		socket.data.time = {
-			passed: socket.data.time.passed + Date.now() - socket.data.time.count,
-			count: null,
-		};
+		// Clear room timer timeout
+		if (room.timeout != null) clearTimeout(room.timeout);
 
-		let [_, opponent] = users.find(([id, _]) => id != socket.id);
-		opponent.data.time = {
-			passed: opponent.data.time.passed,
-			count: Date.now(),
-		};
+		// Increase elapsed time for moving player by the subtracted duration from last move or game initialization
+		room.players[socket.id].elapsed = player.elapsed + (Date.now() - room.time.from) / 1000;
 
-		timeoutWaiter = setTimeout(() => {
-			timeoutWin(opponent);
+		// Reset time to this move
+		room.time.from = Date.now();
 
-			// console.log('KILL OPPONENT');
-		}, maxTime * 1000 - opponent.data.time.passed);
+		// Get opponent ID
+		let opponent = Object.keys(room.players).find((user) => user != socket.id);
 
-		let times = users.map(([_, user]) => {
-			return { time: user.data.time, id: user.id };
-		});
+		// Direct timer to opponent (their turn)
+		room.time.directed = opponent;
 
-		users.map(([id, user]) => {
-			user.data.engine.move(data);
-			if (user.data.engine.isGameOver()) {
-				let report = {
-					'Stalemate': user.data.engine.isStalemate(),
-					'Insufficient Material': user.data.engine.isInsufficientMaterial(),
-					'Threefold Repetition': user.data.engine.isThreefoldRepetition(),
-					'50-move Rule': user.data.engine.isDraw(),
-				};
+		// Create defeat timeout for opponent
+		room.timeout = setTimeout(() => {
+			timerLose(opponent);
+		}, (room.duration - room.players[opponent].elapsed) * 1000);
 
-				let reason = 'Ended: ';
+		// Inform users of updated data
+		room.engine.move(data);
+		informRoom(roomId, false);
 
-				if (user.data.engine.isCheckmate()) {
-					reason += `Checkmate - ${user.data.engine.turn() == 'w' ? 'Black' : 'White'} has won`;
-				} else {
-					for (let [name, result] of Object.entries(report)) {
-						if (result) {
-							reason += name;
-							break;
-						}
-					}
-				}
+		// Check if game has finished
+		let { over } = getEngineResult(room.engine);
 
-				io.to(id).emit('update-board', {
-					// fen: user.data.engine.fen(),
-					last: getLastMove(user.data.engine),
-					board: user.data.engine.board(),
-					legal: null,
-					over: true,
-					times: times,
-					reason: reason,
-					players: users.map(([_, user]) => user.data.name),
-					turn: user.data.engine.turn(),
-				});
+		// If game has ended, close the room after informing players of game status
+		if (over) {
+			console.log(`GAME-ACTIVITY: Game of room "${roomId}" has ended, closing room`);
 
-				// Close room
-				closeRoom(roomName);
-			} else {
-				io.to(id).emit('update-board', {
-					// fen: user.data.engine.fen(),
-					last: getLastMove(user.data.engine),
-					board: user.data.engine.board(),
-					legal:
-						user.data.engine.turn() == user.data.color
-							? user.data.engine.moves({ verbose: true }).map((move) => {
-									return { from: move.from, to: move.to };
-							  })
-							: [],
-					times: times,
-					over: false,
-					players: users.map(([_, user]) => user.data.name),
-					turn: user.data.engine.turn(),
-				});
-			}
-		});
+			room.ended = true;
+			clearTimeout(room.timeout);
+			Object.keys(room.players).map((id) => {
+				let user = getSocketById(id);
+				user.leave(`room.${roomId}`);
+			});
+
+			closeRoom(`room.${roomId}`);
+			informLobby();
+		}
 
 		callback({ status: true });
-		// chess.move({ from: 'g2', to: 'g3' })
-		//
-		// console.log();
 	});
 
 	socket.on('join', (data, callback) => {
-		console.log('Join');
-		if (!Object.keys(data).includes('id')) return;
+		let [validity, users] = isJoinValid(data, socket.id);
+		if (!validity) return console.log(`ROOM-ACTIVITY: User "${socket.id}" failed to join room "${data.id}"`);
 
-		// Check if room exists
-		let room = Array.from(io.sockets.adapter.rooms).find(([name, users]) => {
-			if (!name.startsWith('room.')) return false;
-
-			let id = name.split('room.')[1];
-			return id == data.id;
-		});
-
-		if (room == undefined) return callback({ status: false, reason: 'Room inexistent' });
-
-		let users = Array.from(room[1]);
-
-		// If already in room, ignore
-		if (users.includes(socket.id)) return callback({ status: false, reason: 'Already present in room' });
-
-		// If room is full, ignore
-		if (users.length >= 2) return callback({ status: false, reason: 'Room occupied' });
+		// Since room is now valid, user count is guranteed to be >= 1
 
 		clearAllRooms(socket);
 
-		let color = io.sockets.sockets.get(users[0]).data.color == 'w' ? 'b' : 'w';
+		let color = Object.values(rooms[data.id].players)[0].color == 'w' ? 'b' : 'w';
 
-		socket.join(`room.${data.id}`);
-		socket.data.color = color;
-		socket.data.engine = new Chess();
-		socket.data.started = false;
-		socket.data.name = data.name || 'Unnamed';
-		socket.data.time = {
-			passed: 0,
-			count: null,
-		};
+		enterRoom(socket.id, data.id, data.name || '???', color);
 
-		users = users.concat([socket.id]);
-
-		// Start game if room is filled
-		if (users.length == 2) {
-			if (timeoutWaiter != null) clearTimeout(timeoutWaiter);
-
-			users = users.map((id) => {
-				let user = io.sockets.sockets.get(id);
-				if (user.data.color == 'w') {
-					user.data.time = {
-						passed: 0,
-						count: Date.now(),
-					};
-				}
-				return [id, user];
-			});
-
-			timeoutWaiter = setTimeout(function () {
-				let [_, loser] = users.find(([id, user]) => user.data.color == 'w');
-				timeoutWin(loser);
-			}, maxTime * 1000);
-
-			let times = users.map(([_, user]) => {
-				return { time: user.data.time, id: user.id };
-			});
-
-			users.map(([id, user]) => {
-				user.data.started = true;
-				user.leave('lobby');
-
-				io.to(id).emit('start', {
-					last: getLastMove(user.data.engine),
-					board: user.data.engine.board(),
-					color: user.data.color,
-					name: user.data.name,
-					times: times,
-					legal:
-						user.data.engine.turn() == user.data.color
-							? user.data.engine.moves({ verbose: true }).map((move) => {
-									return { from: move.from, to: move.to };
-							  })
-							: [],
-					players: users.map(([_, user]) => user.data.name),
-					turn: user.data.engine.turn(),
-				});
-			});
-		}
+		initializeRoom(data.id);
 
 		informLobby();
 		callback({ status: true });
 	});
 
 	socket.on('create', (data, callback) => {
-		console.log('Creating a room');
-
 		clearAllRooms(socket);
 
-		let code = makeRoomCode(10);
+		let code = generateRoom(socket.id, data.name || '???', data.color, data.time);
+		console.log(`ROOM-ACTIVITY: User "${socket.id}" has successfully created room "${code}"`);
+
 		socket.join(`room.${code}`);
-		socket.data.color = data.color;
-		socket.data.engine = new Chess();
-		socket.data.started = false;
-		socket.data.name = data.name || 'Unnamed';
-		socket.data.time = {
-			passed: 0,
-			count: null,
-		};
 
 		informLobby();
 		callback(code);

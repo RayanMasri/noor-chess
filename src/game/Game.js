@@ -8,6 +8,11 @@ import './Game.scss';
 import { Chess } from 'chess.js';
 const engine = new Chess();
 
+// Log titles:
+// SERVER:
+// 	- RECEIVE: Messages received directly from the server
+// 	- CHANGE: Actions performed by client related to server (connect, reconnect, etc...)
+
 // transition: opacity 0.3s, top 0.4s cubic-bezier(0, -0.02, 0, 1);
 //
 // console.log(engine.moves({ verbose: true }));
@@ -51,21 +56,19 @@ export default function Game() {
 
 		highlighted: [],
 		overlay: false,
-		overlayMessage: '',
 		waitPromote: { status: false, offset: 0, from: null, to: null },
 		moving: { status: false, type: null, color: null, from: null, to: null },
 		animation: null,
 		animationTimeout: null,
 		animations: [],
-		times: [],
 		color: 'w',
 		// players: ['Loading...', 'Loading...'], // (dev)
 		players: [],
-		gameOver: true,
+		gameResult: { over: false, reason: null },
 		cellSize: 80,
 		name: '',
 		timeInterval: null,
-		timeText: ['5:00', '5:00'], // [<player>, <opponent>]
+		timeText: {}, // [<player>, <opponent>]
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -100,14 +103,14 @@ export default function Game() {
 		let [rank, row] = notation.split('');
 		row = parseInt(row);
 		rank = 'abcdefgh'.indexOf(rank);
-		console.log(row);
-		console.log(rank);
+		// console.log(row);
+		// console.log(rank);
 
 		row += y;
 		rank += x;
 
-		console.log(row);
-		console.log(rank);
+		// console.log(row);
+		// console.log(rank);
 
 		return `${'abcdefgh'[rank]}${row}`;
 	};
@@ -150,10 +153,10 @@ export default function Game() {
 
 	const location = useLocation();
 
-	useEffect(() => {
-		console.log(`State changed to:`);
-		console.log(state);
-	}, [state]);
+	// useEffect(() => {
+	// console.log(`State changed to:`);
+	// console.log(state);
+	// }, [state]);
 
 	const getBoardPieceByNotation = (board, notation) => {
 		let [rank, row] = notation.split('');
@@ -201,62 +204,77 @@ export default function Game() {
 		return animations.map((a) => `${a.from}-${a.to}`).join(', ');
 	};
 
+	const formatSeconds = (seconds) => {
+		let minutes = Math.floor(seconds / 60);
+		seconds = Math.floor(seconds - minutes * 60);
+		seconds = seconds.toString().padStart(2, '0');
+		return [seconds, minutes];
+	};
+
+	const calculateGameTime = (timeInfo) => {
+		let timeText = _state.current.timeText;
+		let playing = timeInfo.players.find((player) => player.id == timeInfo.directed);
+		let passed = Math.max(0, (Date.now() - timeInfo.from) / 1000 + playing.elapsed);
+
+		let [seconds, minutes] = formatSeconds(timeInfo.duration - passed);
+
+		timeText[playing.id] = `${minutes}:${seconds}`;
+
+		let opponent = timeInfo.players.find((player) => player.id != timeInfo.directed);
+		[seconds, minutes] = formatSeconds(timeInfo.duration - opponent.elapsed);
+		timeText[opponent.id] = `${minutes}:${seconds}`;
+
+		return timeText;
+	};
+
 	const onUpdateBoard = (data, color = undefined, name = undefined) => {
-		console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}) (${name} -> ${name != undefined ? name : _state.current.name})`);
+		// console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}) (${name} -> ${name != undefined ? name : _state.current.name})`);
 
 		let object = {
 			..._state.current,
 			pieces: data.board,
 			legal: data.legal,
-			overlay: data.over,
-			overlayMessage: data.over ? data.reason : '',
+			overlay: data.result.over,
 			color: color != undefined ? color : _state.current.color,
 			name: name != undefined ? name : _state.current.name,
-			times: data.times,
+			// time: data.times,
 			players: data.players,
 			turn: data.turn,
-			gameOver: data.over,
+			gameResult: data.result,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
 		};
 
 		if (_state.current.timeInterval != null) clearInterval(_state.current.timeInterval);
-		if (data.over) return setState(object);
-		console.log('JOOOOOOOOOOOOOOOOOHn');
-		console.log(data.times);
-		for (let time of data.times) {
-			let player = time.id == socket.id;
+		if (data.result.over) {
+			navigate(location.pathname, { replace: true });
+			return setState(object);
+		}
+		// console.log('JOOOOOOOOOOOOOOOOOHn');
+		// console.log(data.times);
+		// data.timeInfo
+		// {
+		// 	directed: <ID>,
+		// 	from: <DATE>,
+		// 	players: [
+		// 		{
+		// 			id: <ID>,
+		// 			elapsed: <SECONDS>
+		// 		}
+		// 	]
+		// }
 
-			console.log(time);
-			console.log(time.time.count);
-			console.log(player);
+		if (data.timeInfo.from != null) {
+			let timeText = calculateGameTime(data.timeInfo);
+			object.timeText = timeText;
 
-			if (time.time.count != null) {
-				object.timeInterval = setInterval(() => {
-					console.log(`INTERVAL`);
-					let timeText = _state.current.timeText;
-					console.log(timeText);
-					let passed = (Date.now() - time.time.count) / 1000 + time.time.passed / 1000;
-					console.log(passed);
+			object.timeInterval = setInterval(() => {
+				let timeText = calculateGameTime(data.timeInfo);
 
-					let seconds = maxTime - passed;
-					let minutes = Math.floor(seconds / 60);
-					seconds = Math.floor(seconds - minutes * 60);
-					seconds = seconds.toString().padStart(2, '0');
-
-					timeText[player ? 0 : 1] = `${minutes}:${seconds}`;
-					console.log(timeText);
-
-					// maxTime;
-
-					setState({
-						..._state.current,
-						timeText: timeText,
-					});
-				}, 1000);
-			}
-
-			// console.warn();
-			// console.warn(time);
+				setState({
+					..._state.current,
+					timeText: timeText,
+				});
+			}, 1000);
 		}
 
 		// Remove illegal pre-highlights
@@ -297,55 +315,32 @@ export default function Game() {
 		});
 
 		socket.on('dev-start', (data) => {
-			console.log(`socket dev-start`);
-			console.log(data);
+			// console.log(`socket dev-start`);
+			// console.log(data);
 			onUpdateBoard(data, data.color);
 		});
 
 		socket.on('update-board', (data) => {
-			console.log(`socket on-update-board`);
-			// let board = data.board;
+			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(data)}`);
 
-			// if (state.moving.status) {
-			// 	board = copyBoard(data.board);
-			// 	let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, state.moving.from);
-			// 	let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, state.moving.to);
-
-			// 	// let piece = board[fromRow][fromRank];
-			// 	// if (promotion != null) piece.type = promotion;
-
-			// 	board[fromRow][fromRank] = state.pieces[fromRow][fromRank];
-			// 	board[toRow][toRank] = state.pieces[toRow][toRank];
-			// 	// board[toRow][toRank] = piece;
-			// }
-
-			// console.log('UPDATE BOARDDD');
-			// console.log(state.pieces);
-			// console.log(board);
-			// console.log(data.board);
-
-			// onUpdateBoard({
-			// 	...data,
-			// 	board: board,
-			// });
 			setTimeout(function () {
 				onUpdateBoard(data);
 			}, 10);
 		});
 
 		socket.on('connect_error', () => {
-			console.log(`CLIENT: Connect error occured as ${socket.id}, attempting to connect... (connected: ${socket.connected})`);
+			console.log(`SERVER_CHANGE: Connect error occured as ${socket.id}, attempting to connect... (connected: ${socket.connected})`);
 			socket.connect();
 		});
 
 		socket.on('connect', () => {
-			console.log(`CLIENT: I have connected as ${socket.id} (connected: ${socket.connected})`);
+			console.log(`SERVER_CHANGE: I have connected as ${socket.id} (connected: ${socket.connected})`);
 		});
 
 		socket.on('disconnect', (reason) => {
-			console.log(`CLIENT: I have disconnected as ${socket.id}, reason: ${reason} (connected: ${socket.connected})`);
+			console.log(`SERVER-CHANGE: I have disconnected as ${socket.id}, reason: ${reason} (connected: ${socket.connected})`);
 			if (reason === 'io server disconnect') {
-				console.log(`CLIENT: Reason for disconnection "io server disconnected", attempting to connect... (connected: ${socket.connected})`);
+				console.log(`SERVER-CHANGE: Reason for disconnection "io server disconnected", attempting to connect... (connected: ${socket.connected})`);
 				// the disconnection was initiated by the server, you need to reconnect manually
 				socket.connect();
 			}
@@ -353,23 +348,26 @@ export default function Game() {
 		});
 
 		socket.io.on('reconnection_attempt', () => {
-			console.log(`CLIENT: I have attempted a reconnection as ${socket.id} (connected: ${socket.connected})`);
+			console.log(`SERVER-CHANGE: I have attempted a reconnection as ${socket.id} (connected: ${socket.connected})`);
 		});
 
 		socket.io.on('reconnect', () => {
 			// window.location.reload(); // (dev)
-
-			console.log(`CLIENT: I have reconnected as ${socket.id} (connected: ${socket.connected})`);
+			console.log(`SERVER-CHANGE: I have reconnected as ${socket.id} (connected: ${socket.connected})`);
 		});
 
 		socket.on('disconnection', (data) => {
-			console.log('set state disconnection (forced disconnect)');
-			console.log(_state.current);
+			console.log(`SERVER-RECEIVE: Opponent voluntarily disconnected`);
+			console.log(data);
+
+			// console.log('set state disconnection (forced disconnect)');
+			// console.log(_state.current);
+
+			if (_state.current.timeInterval) clearInterval(_state.current.timeInterval);
 			setState({
 				..._state.current,
 				overlay: true,
-				overlayMessage: `Opponent "${state.players.filter((item) => item == localStorage.getItem('name'))[0]}" ${data.reason}`,
-				gameOver: true,
+				gameResult: { over: true, reason: `Opponent "${data.name}" ${data.reason}` },
 			});
 		});
 
@@ -382,7 +380,7 @@ export default function Game() {
 	};
 
 	const requestPromotion = (from, to) => {
-		console.log('set staet proomotin');
+		// console.log('set staet proomotin');
 		setState({
 			...state,
 			overlay: true,
@@ -402,7 +400,7 @@ export default function Game() {
 		// board[fromRow][fromRank]
 
 		let captured = board[toRow][toRank];
-		console.log(captured);
+		// console.log(captured);
 
 		board[toRow][toRank] = board[fromRow][fromRank];
 		board[toRow][toRank].square = to;
@@ -422,28 +420,28 @@ export default function Game() {
 
 		// Move in server
 		socket.emit('move', { from: from, to: to, promotion: promotion }, (response) => {
-			if (response.status) {
-				console.log(`Successfully moved ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}`);
-			} else {
-				console.log(`Failed to move ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}: ${response.reason}`);
-			}
+			// if (response.status) {
+			// console.log(`Successfully moved ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}`);
+			// } else {
+			// console.log(`Failed to move ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}: ${response.reason}`);
+			// }
 		});
 	};
 
 	const onSquareClick = (position) => {
 		let { piece } = getBoardPieceByNotation(_state.current.pieces, position);
 		if (piece != null) return;
-		console.log(`SQUARE CLICK`);
+		// console.log(`SQUARE CLICK`);
 	};
 
 	const onClick = (position, piece) => {
 		// if (state.moving.status) return;
 
-		console.log(`PIECE CLICK`);
-		console.log(`onClick event`);
+		// console.log(`PIECE CLICK`);
+		// console.log(`onClick event`);
 		let start = Date.now();
 		let hasPiece = piece != null;
-		console.log(`Clicked on ${position} with piece object: ${piece}, has piece: ${hasPiece} (${Date.now() - start} ms)`);
+		// console.log(`Clicked on ${position} with piece object: ${piece}, has piece: ${hasPiece} (${Date.now() - start} ms)`);
 
 		if (state.turn != state.color) {
 			if (hasPiece && piece.color == state.color) {
@@ -469,11 +467,11 @@ export default function Game() {
 		) {
 			let moves = state.legal.filter((move) => move.from == state.selected).filter((move) => move.to == position);
 
-			console.log(`Click position is a legal move for the currently selected piece, moving... (${Date.now() - start} ms)`);
+			// console.log(`Click position is a legal move for the currently selected piece, moving... (${Date.now() - start} ms)`);
 
 			// If moves to the same square are greater than one, it's a promotion
 			if (moves.length > 1) {
-				console.log(`Legal moves of the same position are multiple, requesting promotion... (${Date.now() - start} ms)`);
+				// console.log(`Legal moves of the same position are multiple, requesting promotion... (${Date.now() - start} ms)`);
 				requestPromotion(state.selected, position);
 				return;
 			} else {
@@ -482,19 +480,19 @@ export default function Game() {
 		}
 
 		if (!hasPiece) {
-			console.log(`Click position does not have any pieces, ignoring... (${Date.now() - start} ms)`);
+			// console.log(`Click position does not have any pieces, ignoring... (${Date.now() - start} ms)`);
 			if (state.selected != null) setState({ ...state, highlighted: [], selected: null });
 			return;
 		}
 
 		if (!state.legal.map((move) => move.from).includes(position)) {
-			console.log(`Selected piece does not have any legal moves, ignoring... (${Date.now() - start} ms)`);
+			// console.log(`Selected piece does not have any legal moves, ignoring... (${Date.now() - start} ms)`);
 			if (state.selected != null) setState({ ...state, highlighted: [], selected: null });
 			return;
 		}
 
 		let highlighted = state.legal.filter((move) => move.from == position).map((move) => move.to);
-		console.log(`Selected piece has ${highlighted.length} legal move(s), highlighting all... (${Date.now() - start} ms)`);
+		// console.log(`Selected piece has ${highlighted.length} legal move(s), highlighting all... (${Date.now() - start} ms)`);
 
 		setState({
 			..._state.current,
@@ -504,22 +502,22 @@ export default function Game() {
 	};
 
 	const getPieces = () => {
-		console.log(`Loading pieces, color is ${state.color}`);
+		// console.log(`Loading pieces, color is ${state.color}`);
 
 		if (state.color == 'w') {
-			console.log(state.pieces);
+			// console.log(state.pieces);
 			return state.pieces;
 		} else {
 			let pieces = copyBoard(state.pieces);
 			pieces = pieces.map((row) => row.reverse()).reverse();
 
-			console.log(pieces);
+			// console.log(pieces);
 			return pieces;
 		}
 	};
 
 	const exitGame = () => {
-		if (!state.gameOver) socket.emit('exit');
+		if (!state.gameResult.over) socket.emit('exit');
 
 		navigate('/multiplayer');
 	};
@@ -582,13 +580,6 @@ export default function Game() {
 		}
 	};
 
-	const getOpponentName = () => {
-		let opponent = state.players.filter((player) => player != state.name);
-		if (opponent.length != 0) return opponent[0];
-
-		return state.players[0];
-	};
-
 	return (
 		<div id='game' className='page'>
 			<div id='main'>
@@ -614,7 +605,7 @@ export default function Game() {
 						>
 							<ExitToAppIcon sx={{ color: 'white' }} />
 						</IconButton>
-						<div>{state.players.join(' vs ')}</div>
+						<div>{state.players.map((player) => player.name).join(' vs ')}</div>
 					</div>
 					<div id='outer-board'>
 						<div
@@ -637,8 +628,8 @@ export default function Game() {
 											top = animation != undefined ? (animation.status ? getCoordinatesFromNotation(animation.from).top : top) : top;
 											left = animation != undefined ? (animation.status ? getCoordinatesFromNotation(animation.from).left : left) : left;
 											// if (animation != undefined) {
-											// 	console.log(`ANIMATION: Animating piece at ${piece.square} [${Math.round(top)}, ${Math.round(left)}]`);
-											// 	console.log(`ANIMATION: ${JSON.stringify(animation)}`);
+											// console.log(`ANIMATION: Animating piece at ${piece.square} [${Math.round(top)}, ${Math.round(left)}]`);
+											// console.log(`ANIMATION: ${JSON.stringify(animation)}`);
 											// }
 
 											return (
@@ -724,7 +715,7 @@ export default function Game() {
 									})}
 								</div>
 							) : null}
-							{state.overlayMessage}
+							{state.gameResult.reason}
 						</div>
 					</div>
 					<div id='footer'>{state.turn == 'b' ? "Black's turn" : "White's turn"}</div>
@@ -751,17 +742,19 @@ export default function Game() {
 								.flat()
 								.filter((e) => e)}
 						</div>
-						<div className='inner'>
-							<div className='name'>
-								<div>{getOpponentName()}</div>
-								<div>{state.timeText[1]}</div>
+						{state.players.length > 0 ? (
+							<div className='inner'>
+								<div className='name'>
+									<div>{state.players.find((player) => player.id != socket.id).name}</div>
+									<div>{state.timeText[state.players.find((player) => player.id != socket.id).id]}</div>
+								</div>
+								<Divider style={{ width: '100%', backgroundColor: 'white' }} />
+								<div className='name'>
+									<div>{state.name}</div>
+									<div>{state.timeText[socket.id]}</div>
+								</div>
 							</div>
-							<Divider style={{ width: '100%', backgroundColor: 'white' }} />
-							<div className='name'>
-								<div>{state.name}</div>
-								<div>{state.timeText[0]}</div>
-							</div>
-						</div>
+						) : null}
 						{/* you is always at the bottom */}
 						<div className='piece-log'>
 							{Object.entries(calculateScores())

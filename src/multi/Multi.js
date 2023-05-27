@@ -51,8 +51,8 @@ export default function Multi(props) {
 	const navigate = useNavigate();
 
 	const onRoomsUpdate = (data) => {
-		console.log(`Lobby update:`);
-		console.log(data);
+		// console.log(`Lobby update:`);
+		// console.log(data);
 		setState({
 			..._state.current,
 			rooms: data,
@@ -79,18 +79,18 @@ export default function Multi(props) {
 	useEffect(() => {
 		socket.emit('join-lobby', (data) => {
 			onRoomsUpdate(data);
-			console.log(state);
+			// console.log(state);
 		});
 
 		socket.on('lobby-update', (data) => {
 			setTimeout(() => {
 				onRoomsUpdate(data);
-				console.log(state);
+				// console.log(state);
 			}, 1);
 		});
 
 		socket.on('start', (data) => {
-			console.log(data);
+			// console.log(data);
 			// console.log(navigate);
 			navigate('/game', {
 				state: data,
@@ -114,7 +114,7 @@ export default function Multi(props) {
 	};
 
 	const onCreate = () => {
-		socket.emit('create', { name: state.name, color: state.color }, (code) => {
+		socket.emit('create', { name: state.name, color: state.color, time: 300 }, (code) => {
 			setState({
 				...state,
 				createId: code,
