@@ -1,8 +1,17 @@
 const { server, io } = require('./load.js');
-
 const { Chess } = require('chess.js');
-// let engine = new Chess();
-let maxTime = 300;
+
+// TODO: Add reconnection capabilities to socket client (this might not be possible)
+// TODO: Handle same browser login
+// TODO: Add game spectating
+// TODO: Add game board preview from lobby and board maximization/magnification
+const colors = {
+	'w': 'White',
+	'b': 'Black',
+};
+
+let rooms = {};
+const getSocketById = (id) => io.sockets.sockets.get(id);
 
 const makeRoomCode = (length) => {
 	let result = '';
@@ -15,36 +24,6 @@ const makeRoomCode = (length) => {
 	}
 	return result;
 };
-
-// console.log(user.data.engine.board());
-// console.log(user.data.engine.moves({ verbose: true }).map((move) => {
-// 				return { from: move.from, to: move.to };
-// 		  })
-// 		: [],
-
-// console.log(engine.history({ verbose: true }));
-// Create a new Chess instance
-
-// engine.move({ from: 'd2', to: 'd1', promotion: 'b' });
-// console.log(
-// 	JSON.stringify({
-// 		pieces: engine.board(),
-// 		legal: engine.moves({ verbose: true }),
-// 	})
-// );
-
-// TODO: add reconnection capabilities to socket client
-// TODO: Handle promotion *
-// TODO: Handle end game *
-// TODO: Handle other user leave *
-// TODO: Handle same browser login
-// TODO: add piece promotion
-
-// FIXME: If a user has a created room and joins another room, close that created room (this also prevents other users from making rooms for some reason)
-// FIXME: Prevent a user from making multiple rooms by clearing all owned rooms when creating new rooms
-
-let rooms = {};
-const getSocketById = (id) => io.sockets.sockets.get(id);
 
 const generateRoom = (creator, name, color, time) => {
 	let code = makeRoomCode(10);
@@ -251,10 +230,6 @@ const clearAllRooms = (socket) => {
 };
 
 const getRoomsData = () => {
-	Object.entries(rooms).map(([id, data]) => {
-		console.log(`${id} - ${data.ended}`);
-	});
-
 	return Object.entries(rooms)
 		.filter(([id, data]) => !data.ended)
 		.map(([id, data]) => {
@@ -263,23 +238,6 @@ const getRoomsData = () => {
 				names: Object.values(data.players),
 			};
 		});
-
-	// console.log(`Get rooms data:`);
-	// console.log(Array.from(io.sockets.adapter.rooms));
-	// return Array.from(io.sockets.adapter.rooms)
-	// 	.map(([name, users]) => {
-	// 		if (!name.startsWith('room.') || name == 'lobby') return;
-
-	// 		let id = name.split('.')[1];
-	// 		return {
-	// 			id: id,
-	// 			names: Array.from(users).map((user) => {
-	// 				let socket = io.sockets.sockets.get(user);
-	// 				return { name: socket.data.name, color: socket.data.color };
-	// 			}),
-	// 		};
-	// 	})
-	// 	.filter((room) => room);
 };
 
 const informLobby = () => {
@@ -340,6 +298,23 @@ const isJoinValid = (data, id) => {
 	return [true, users];
 };
 
+const destroyCreated = (socket) => {
+	let created = Object.entries(rooms).filter(([id, data]) => !data.started && Object.keys(data.players).includes(socket));
+
+	console.log(`ROOM-ACTIVITY: Removing ${created.length} user created room(s) under "${socket}"`);
+
+	created.map(([id, data]) => {
+		delete rooms[id];
+	});
+};
+
+const formatSeconds = (seconds) => {
+	seconds = Math.max(0, seconds); // Clamp seconds to always be positive
+	let minutes = Math.floor(seconds / 60);
+	seconds = Math.floor(seconds - minutes * 60);
+	seconds = seconds.toString().padStart(2, '0');
+	return `${minutes}:${seconds}`;
+};
 io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
@@ -448,6 +423,15 @@ io.on('connection', (socket) => {
 		room.engine.move(data);
 		informRoom(roomId, false);
 
+		console.log(`GAME-ACTIVITY: Player "${socket.id}" has successfully moved in room "${roomId}" as ${colors[player.color].toLowerCase()}`);
+		console.log(
+			`GAME-ACTIVITY: Showing elapsed time for each user:\n${Object.entries(room.players)
+				.map(([id, data]) => {
+					return `${id} (${data.name}) - ${data.elapsed}s > ${formatSeconds(room.duration - data.elapsed)}`;
+				})
+				.join('\n')}`
+		);
+
 		// Check if game has finished
 		let { over } = getEngineResult(room.engine);
 
@@ -473,9 +457,10 @@ io.on('connection', (socket) => {
 		let [validity, users] = isJoinValid(data, socket.id);
 		if (!validity) return console.log(`ROOM-ACTIVITY: User "${socket.id}" failed to join room "${data.id}"`);
 
-		// Since room is now valid, user count is guranteed to be >= 1
-
 		clearAllRooms(socket);
+
+		// Remove all one-player non-started rooms under this socket (created rooms)
+		destroyCreated(socket.id);
 
 		let color = Object.values(rooms[data.id].players)[0].color == 'w' ? 'b' : 'w';
 
@@ -488,7 +473,8 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('create', (data, callback) => {
-		clearAllRooms(socket);
+		// Remove all one-player non-started rooms under this socket
+		destroyCreated(socket.id);
 
 		let code = generateRoom(socket.id, data.name || '???', data.color, data.time);
 		console.log(`ROOM-ACTIVITY: User "${socket.id}" has successfully created room "${code}"`);

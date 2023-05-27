@@ -17,20 +17,12 @@ const engine = new Chess();
 //
 // console.log(engine.moves({ verbose: true }));
 
-// FIXME: Maybe try making transitions from board updates?
-// TODO: Handle multiple animations *
-// FIXME: Incorrect click positions for smaller screen, squares (not clicking on highlight icon) *
-// TODO: Scale row/rank indicators and highlight icons with inner width *
-// TODO: Handle conflict from same move client/server animation
 // FIXME: Cancel all animations that arrive at the same destination when creating a new animation
-// FIXME: Ability to move client-side while not in turn
 
+// TODO: Add resignation
 // TODO: Cancel animation on promotion
 
 const animationTime = 0.25; // in seconds
-// const animationSpeed = 900; // pixel per second
-
-let maxTime = 300;
 
 class Board {
 	constructor(props) {
@@ -50,7 +42,6 @@ export default function Game() {
 	const navigate = useNavigate();
 	const [state, _setState] = useState({
 		selected: null,
-
 		legal: [],
 		pieces: [],
 
@@ -205,24 +196,22 @@ export default function Game() {
 	};
 
 	const formatSeconds = (seconds) => {
+		seconds = Math.max(0, seconds); // Clamp seconds to always be positive
 		let minutes = Math.floor(seconds / 60);
 		seconds = Math.floor(seconds - minutes * 60);
 		seconds = seconds.toString().padStart(2, '0');
-		return [seconds, minutes];
+		return `${minutes}:${seconds}`;
 	};
 
 	const calculateGameTime = (timeInfo) => {
 		let timeText = _state.current.timeText;
 		let playing = timeInfo.players.find((player) => player.id == timeInfo.directed);
-		let passed = Math.max(0, (Date.now() - timeInfo.from) / 1000 + playing.elapsed);
+		let passed = (Date.now() - timeInfo.from) / 1000 + playing.elapsed;
 
-		let [seconds, minutes] = formatSeconds(timeInfo.duration - passed);
-
-		timeText[playing.id] = `${minutes}:${seconds}`;
+		timeText[playing.id] = formatSeconds(timeInfo.duration - passed);
 
 		let opponent = timeInfo.players.find((player) => player.id != timeInfo.directed);
-		[seconds, minutes] = formatSeconds(timeInfo.duration - opponent.elapsed);
-		timeText[opponent.id] = `${minutes}:${seconds}`;
+		timeText[opponent.id] = formatSeconds(timeInfo.duration - opponent.elapsed);
 
 		return timeText;
 	};
@@ -321,7 +310,17 @@ export default function Game() {
 		});
 
 		socket.on('update-board', (data) => {
-			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(data)}`);
+			let copied = Object.assign({}, data);
+			delete copied.last;
+			delete copied.legal;
+			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
+			console.log(
+				`TIME: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
+					.map((player) => {
+						return `${player.id} (${data.players.find((_player) => _player.id == player.id).name}) - ${player.elapsed}s > ${formatSeconds(data.timeInfo.duration - player.elapsed)}`;
+					})
+					.join('\n')}`
+			);
 
 			setTimeout(function () {
 				onUpdateBoard(data);
@@ -583,16 +582,6 @@ export default function Game() {
 	return (
 		<div id='game' className='page'>
 			<div id='main'>
-				<div id='left' className='side'>
-					{/* {getMissing(
-						state.pieces
-							.flat()
-							.filter((piece) => piece && piece.color == state.color)
-							.map((piece) => piece.type)
-					).map((piece) => {
-						return <img src={require(`../icons/${state.color}${piece}.svg`)}></img>;
-					})} */}
-				</div>
 				<div id='center'>
 					<div id='header'>
 						<IconButton
@@ -755,12 +744,10 @@ export default function Game() {
 								</div>
 							</div>
 						) : null}
-						{/* you is always at the bottom */}
 						<div className='piece-log'>
 							{Object.entries(calculateScores())
 								.map(([key, value]) => {
 									if (value.dominance != state.color || value.dominance == null) return;
-									console.log([key, value]);
 									let pieces = [];
 									for (let i = 0; i < value.occurences; i++) {
 										pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
@@ -769,23 +756,8 @@ export default function Game() {
 								})
 								.flat()
 								.filter((e) => e)}
-
-							{/* {'pppppqknnrr'
-								.split('')
-								.map((piece) => `w${piece}`)
-								.map((name) => {
-									return <img src={require(`../icons/${name}.svg`)}></img>;
-								})} */}
 						</div>
 					</div>
-					{/* {getMissing(
-						state.pieces
-							.flat()
-							.filter((piece) => piece && piece.color != state.color)
-							.map((piece) => piece.type)
-					).map((piece) => {
-						return <img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${piece}.svg`)}></img>;
-					})} */}
 				</div>
 			</div>
 		</div>
