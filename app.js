@@ -98,6 +98,7 @@ const getBoardUpdateObject = (engine, room, playerData) => {
 	return {
 		last: getLastMove(engine),
 		board: engine.board(),
+		fen: engine.fen(),
 		timeInfo: {
 			...room.time,
 			duration: room.duration,

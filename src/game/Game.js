@@ -6,6 +6,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { v4 as uuidv4 } from 'uuid';
 import './Game.scss';
 import { Chess } from 'chess.js';
+import moment from 'moment';
 const engine = new Chess();
 
 // Log titles:
@@ -21,6 +22,8 @@ const engine = new Chess();
 
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
+
+// FIXME: Timer 2 second delay bug, issue might be client-side with the 1-second interval
 
 const animationTime = 0.25; // in seconds
 
@@ -256,6 +259,15 @@ export default function Game() {
 			let timeText = calculateGameTime(data.timeInfo);
 			object.timeText = timeText;
 
+			console.log(
+				`TIME-INTERVAL-INIT: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
+					.map((player) => {
+						return `${player.id} (${data.players.find((_player) => _player.id == player.id).name}) - ${player.elapsed}s > ${formatSeconds(data.timeInfo.duration - player.elapsed)}`;
+					})
+					.join('\n')}`
+			);
+			console.log(moment().format('MMMM DD h:mm:ss A'));
+
 			object.timeInterval = setInterval(() => {
 				let timeText = calculateGameTime(data.timeInfo);
 
@@ -263,6 +275,8 @@ export default function Game() {
 					..._state.current,
 					timeText: timeText,
 				});
+
+				console.log(moment().format('MMMM DD h:mm:ss A'));
 			}, 1000);
 		}
 
@@ -313,6 +327,7 @@ export default function Game() {
 			let copied = Object.assign({}, data);
 			delete copied.last;
 			delete copied.legal;
+			delete copied.board;
 			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
 			console.log(
 				`TIME: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
@@ -321,6 +336,7 @@ export default function Game() {
 					})
 					.join('\n')}`
 			);
+			console.log(moment().format('MMMM DD h:mm:ss A'));
 
 			setTimeout(function () {
 				onUpdateBoard(data);
