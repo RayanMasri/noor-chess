@@ -438,7 +438,7 @@ export default function Game() {
 		// Move in server
 		console.log(`${moment().format('MMMM DD h:mm:ss A')}: move emit`);
 
-		socket.emit('move', { from: from, to: to, promotion: promotion });
+		socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() });
 	};
 
 	const onSquareClick = (position) => {

@@ -383,7 +383,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('move', (data) => {
-		let { from, to, promotion } = data;
+		let { from, to } = data;
 
 		// Get user room
 		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
@@ -404,10 +404,10 @@ io.on('connection', (socket) => {
 		if (room.timeout != null) clearTimeout(room.timeout);
 
 		// Increase elapsed time for moving player by the subtracted duration from last move or game initialization
-		room.players[socket.id].elapsed = player.elapsed + (Date.now() - room.time.from) / 1000;
+		room.players[socket.id].elapsed = player.elapsed + (data.start - room.time.from) / 1000;
 
 		// Reset time to this move
-		room.time.from = Date.now();
+		room.time.from = data.start;
 
 		// Get opponent ID
 		let opponent = Object.keys(room.players).find((user) => user != socket.id);
