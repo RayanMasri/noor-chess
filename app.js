@@ -382,7 +382,7 @@ io.on('connection', (socket) => {
 		callback(getRoomsData());
 	});
 
-	socket.on('move', (data, callback) => {
+	socket.on('move', (data) => {
 		let { from, to, promotion } = data;
 
 		// Get user room
@@ -450,8 +450,6 @@ io.on('connection', (socket) => {
 			closeRoom(`room.${roomId}`);
 			informLobby();
 		}
-
-		callback({ status: true });
 	});
 
 	socket.on('join', (data, callback) => {

@@ -328,7 +328,7 @@ export default function Game() {
 			delete copied.last;
 			delete copied.legal;
 			delete copied.board;
-			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
+			console.log(`${moment().format('MMMM DD h:mm:ss A')}: SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
 			console.log(
 				`TIME: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
 					.map((player) => {
@@ -406,6 +406,8 @@ export default function Game() {
 	};
 
 	const sendMove = (from, to, promotion = null) => {
+		console.log(`${moment().format('MMMM DD h:mm:ss A')}: On move`);
+
 		// Move from client before moving in server
 		let board = copyBoard(_state.current.pieces);
 
@@ -434,13 +436,9 @@ export default function Game() {
 		);
 
 		// Move in server
-		socket.emit('move', { from: from, to: to, promotion: promotion }, (response) => {
-			// if (response.status) {
-			// console.log(`Successfully moved ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}`);
-			// } else {
-			// console.log(`Failed to move ${from} -> ${to}${promotion != null ? ` (Promotion-${promotion})` : ''}: ${response.reason}`);
-			// }
-		});
+		console.log(`${moment().format('MMMM DD h:mm:ss A')}: move emit`);
+
+		socket.emit('move', { from: from, to: to, promotion: promotion });
 	};
 
 	const onSquareClick = (position) => {
