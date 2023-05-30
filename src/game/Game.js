@@ -27,9 +27,10 @@ const engine = new Chess();
 // FIXME: When "move" emits are delayed, the delay is added to the player's timer, which isn't correct,
 // Possible fixes:
 // Acquire non-system time Date.now() from client and send to server as initial send time
-//
+// Change unix timestamp of Date.now() relative to server on initial receive
 
 // FIXME: Using data.start from client has issues with conflicting system times of users
+// FIXME: Prevent updated time text to be greater than current time text
 
 const animationTime = 0.25; // in seconds
 
@@ -401,8 +402,12 @@ export default function Game() {
 
 		// Move in server
 
-		socket.emit('move', { from: from, to: to, promotion: promotion });
-		// socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() });
+		// socket.emit('move', { from: from, to: to, promotion: promotion });
+		// const now = () => {
+		// 	return ;
+		// 	// return Date.now();
+		// };
+		socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() + parseInt(localStorage.getItem('unix-offset')) });
 	};
 
 	const onSquareClick = (position) => {

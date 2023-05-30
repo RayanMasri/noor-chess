@@ -4,6 +4,8 @@ import Input from '@mui/material/Input';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { socket } from '../socket.js';
 import { useNavigate } from 'react-router-dom';
+import moment from 'moment';
+
 import './Multi.scss';
 
 let colors = {
@@ -93,6 +95,11 @@ export default function Multi(props) {
 	// }, []);
 
 	useEffect(() => {
+		socket.emit('sync-unix', Date.now(), (offset) => {
+			console.log(`Client to server offset: ${offset}ms`);
+			localStorage.setItem('unix-offset', offset);
+		});
+
 		socket.emit('join-lobby', (data) => {
 			onRoomsUpdate(data);
 			// console.log(state);

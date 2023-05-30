@@ -320,6 +320,10 @@ const formatSeconds = (seconds) => {
 io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
+	socket.on('sync-unix', (time, callback) => {
+		callback(Date.now() - time);
+	});
+
 	socket.on('error', (err) => {
 		console.log(err.toString());
 	});
@@ -385,8 +389,8 @@ io.on('connection', (socket) => {
 
 	socket.on('move', (data) => {
 		let { from, to } = data;
-		// let date = data.start
-		let date = Date.now();
+		let date = data.start;
+		// let date = Date.now();
 
 		// Get user room
 		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
