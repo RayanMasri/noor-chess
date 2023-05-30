@@ -24,6 +24,7 @@ const engine = new Chess();
 // TODO: Cancel animation on promotion
 
 // FIXME: Timer 2 second delay bug, issue might be client-side with the 1-second interval
+// FIXME: Using data.start from client has issues with conflicting system times of users
 
 const animationTime = 0.25; // in seconds
 
@@ -241,32 +242,10 @@ export default function Game() {
 			navigate(location.pathname, { replace: true });
 			return setState(object);
 		}
-		// console.log('JOOOOOOOOOOOOOOOOOHn');
-		// console.log(data.times);
-		// data.timeInfo
-		// {
-		// 	directed: <ID>,
-		// 	from: <DATE>,
-		// 	players: [
-		// 		{
-		// 			id: <ID>,
-		// 			elapsed: <SECONDS>
-		// 		}
-		// 	]
-		// }
 
 		if (data.timeInfo.from != null) {
 			let timeText = calculateGameTime(data.timeInfo);
 			object.timeText = timeText;
-
-			console.log(
-				`TIME-INTERVAL-INIT: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
-					.map((player) => {
-						return `${player.id} (${data.players.find((_player) => _player.id == player.id).name}) - ${player.elapsed}s > ${formatSeconds(data.timeInfo.duration - player.elapsed)}`;
-					})
-					.join('\n')}`
-			);
-			console.log(moment().format('MMMM DD h:mm:ss A'));
 
 			object.timeInterval = setInterval(() => {
 				let timeText = calculateGameTime(data.timeInfo);
@@ -275,8 +254,6 @@ export default function Game() {
 					..._state.current,
 					timeText: timeText,
 				});
-
-				console.log(moment().format('MMMM DD h:mm:ss A'));
 			}, 1000);
 		}
 
@@ -287,26 +264,9 @@ export default function Game() {
 
 		if (data.last == undefined) return setState(object);
 
-		// console.log(`Attempting to run animation from update-board...`);
-		// console.log(`path: ${data.last.from} -> ${data.last.to}`);
-		// console.log(`current animations: ${logAnimations(_state.current.animations)}`);
-		// console.log(`filtered animations with same path: ${logAnimations(_state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to))}`);
-
 		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
-		// let client = _state.current.animations.filter((animation) => animation.from == data.last.from && animation.to == data.last.to).length > 0;
-		// if (client) return setState(object);
 
 		createAnimation(data.last, object);
-
-		// console.log(`Updating color to ${data.color != undefined ? data.color : state.color}`);
-
-		// const animationId = uuidv4();
-		// setState({
-		// 	...object,
-		// 	animations: [..._state.current.animations, { status: true, from: data.last.from, to: data.last.to, id: animationId }],
-		// });
-
-		// beginAnimationSequence(animationId);
 	};
 
 	useEffect(() => {
@@ -317,18 +277,18 @@ export default function Game() {
 			});
 		});
 
-		socket.on('dev-start', (data) => {
-			// console.log(`socket dev-start`);
-			// console.log(data);
-			onUpdateBoard(data, data.color);
-		});
+		// socket.on('dev-start', (data) => {
+		// 	// console.log(`socket dev-start`);
+		// 	// console.log(data);
+		// 	onUpdateBoard(data, data.color);
+		// });
 
 		socket.on('update-board', (data) => {
 			let copied = Object.assign({}, data);
 			delete copied.last;
 			delete copied.legal;
 			delete copied.board;
-			console.log(`${moment().format('MMMM DD h:mm:ss A')}: SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
+			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
 			console.log(
 				`TIME: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
 					.map((player) => {
@@ -336,11 +296,10 @@ export default function Game() {
 					})
 					.join('\n')}`
 			);
-			console.log(moment().format('MMMM DD h:mm:ss A'));
 
 			setTimeout(function () {
 				onUpdateBoard(data);
-			}, 10);
+			}, 10); // For animation delay
 		});
 
 		socket.on('connect_error', () => {
@@ -406,8 +365,6 @@ export default function Game() {
 	};
 
 	const sendMove = (from, to, promotion = null) => {
-		console.log(`${moment().format('MMMM DD h:mm:ss A')}: On move`);
-
 		// Move from client before moving in server
 		let board = copyBoard(_state.current.pieces);
 
@@ -436,7 +393,6 @@ export default function Game() {
 		);
 
 		// Move in server
-		console.log(`${moment().format('MMMM DD h:mm:ss A')}: move emit`);
 
 		socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() });
 	};
