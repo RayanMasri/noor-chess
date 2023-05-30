@@ -11,17 +11,32 @@ let colors = {
 	'b': 'Black',
 };
 
+const times = {
+	'1:00': 60,
+	'3:00': 180,
+	'5:00': 300,
+	'10:00': 600,
+};
+
 const Room = (props) => {
 	return (
 		<div className='room'>
 			<div className='top'>
-				<div>
-					{props.room.names.length < 2
-						? `Owner: ${props.room.names[0].name} (${colors[props.room.names[0].color]})`
-						: `${props.room.names[0].name} (${colors[props.room.names[0].color]})\nvs\n${props.room.names[1].name} (${colors[props.room.names[1].color]})`.split('\n').map((line) => {
-								return <div>{line}</div>;
-						  })}
+				<div className='inner'>
+					<div>
+						{props.room.names.length < 2
+							? `Owner: ${props.room.names[0].name} (${colors[props.room.names[0].color]}) `
+							: `${props.room.names[0].name} (${colors[props.room.names[0].color]})\nvs\n${props.room.names[1].name} (${colors[props.room.names[1].color]}) `.split('\n').map((line) => {
+									return <div>{line}</div>;
+							  })}
+					</div>
+					<div
+						style={{
+							textAlign: 'right',
+						}}
+					>{`Time: ${props.room.duration / 60}:00`}</div>
 				</div>
+
 				<img src={require('../icons/chess-board.svg').default}></img>
 			</div>
 
@@ -41,6 +56,7 @@ export default function Multi(props) {
 		game: false,
 		rooms: [],
 		color: 'w',
+		time: '5:00',
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -114,17 +130,11 @@ export default function Multi(props) {
 	};
 
 	const onCreate = () => {
-		socket.emit('create', { name: state.name, color: state.color, time: 300 }, (code) => {
+		socket.emit('create', { name: state.name, color: state.color, time: times[state.time] }, (code) => {
 			setState({
 				...state,
 				createId: code,
 			});
-		});
-	};
-	const onChoose = (color) => {
-		setState({
-			...state,
-			color: color,
 		});
 	};
 
@@ -178,24 +188,26 @@ export default function Multi(props) {
 				</div>
 
 				<Divider />
-				<div id='colors'>
-					<Button
-						style={{ backgroundColor: '#266308' }}
-						onClick={() => {
-							onChoose('w');
-						}}
-						className={state.color == 'w' ? 'selected' : ''}
-					>
+				<div className='options'>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'w' })} className={state.color == 'w' ? 'selected' : ''}>
 						White
 					</Button>
-					<Button
-						style={{ backgroundColor: '#266308' }}
-						onClick={() => {
-							onChoose('b');
-						}}
-						className={state.color == 'b' ? 'selected' : ''}
-					>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'b' })} className={state.color == 'b' ? 'selected' : ''}>
 						Black
+					</Button>
+				</div>
+				<div className='options'>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '1:00' })} className={state.time == '1:00' ? 'selected' : ''}>
+						1:00
+					</Button>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '3:00' })} className={state.time == '3:00' ? 'selected' : ''}>
+						3:00
+					</Button>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '5:00' })} className={state.time == '5:00' ? 'selected' : ''}>
+						5:00
+					</Button>
+					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '10:00' })} className={state.time == '10:00' ? 'selected' : ''}>
+						10:00
 					</Button>
 				</div>
 				<Button style={{ backgroundColor: '#266308' }} onClick={onCreate}>

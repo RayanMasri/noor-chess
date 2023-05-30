@@ -24,6 +24,11 @@ const engine = new Chess();
 // TODO: Cancel animation on promotion
 
 // FIXME: Timer 2 second delay bug, issue might be client-side with the 1-second interval
+// FIXME: When "move" emits are delayed, the delay is added to the player's timer, which isn't correct,
+// Possible fixes:
+// Acquire non-system time Date.now() from client and send to server as initial send time
+//
+
 // FIXME: Using data.start from client has issues with conflicting system times of users
 
 const animationTime = 0.25; // in seconds
@@ -266,6 +271,7 @@ export default function Game() {
 
 		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
 
+		console.log(`ANIMATION: Server-side ${data.last.from} -> ${data.last.to}, current animation: ${JSON.stringify(_state.current.animation)}`);
 		createAnimation(data.last, object);
 	};
 
@@ -380,6 +386,7 @@ export default function Game() {
 		board[toRow][toRank].square = to;
 		board[fromRow][fromRank] = null;
 
+		console.log(`ANIMATION: Client-side ${from} -> ${to}, current animation: ${JSON.stringify(_state.current.animation)}`);
 		createAnimation(
 			{ from: from, to: to, captured: captured != null ? captured.piece : null, color: state.color },
 			{
@@ -394,7 +401,8 @@ export default function Game() {
 
 		// Move in server
 
-		socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() });
+		socket.emit('move', { from: from, to: to, promotion: promotion });
+		// socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() });
 	};
 
 	const onSquareClick = (position) => {

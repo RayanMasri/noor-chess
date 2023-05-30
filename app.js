@@ -237,6 +237,7 @@ const getRoomsData = () => {
 			return {
 				id: id,
 				names: Object.values(data.players),
+				duration: data.duration,
 			};
 		});
 };
