@@ -31,6 +31,8 @@ const engine = new Chess();
 
 // FIXME: Using data.start from client has issues with conflicting system times of users
 // FIXME: Prevent updated time text to be greater than current time text
+// FIXME: Sudden involuntarily client-side disconnections occuring from one user
+// FIXME: Some rooms don't disappear when all user leave
 
 const animationTime = 0.25; // in seconds
 
