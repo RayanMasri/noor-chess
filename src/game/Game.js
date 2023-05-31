@@ -79,6 +79,10 @@ export default function Game() {
 		_setState(data);
 	};
 
+	const getDateNow = () => {
+		return Date.now() + parseInt(localStorage.getItem('unix-offset'));
+	};
+
 	const getCoordinatesFromNotation = (notation) => {
 		let [rank, row] = notation.split('');
 		row = parseInt(row);
@@ -218,7 +222,7 @@ export default function Game() {
 	const calculateGameTime = (timeInfo) => {
 		let timeText = _state.current.timeText;
 		let playing = timeInfo.players.find((player) => player.id == timeInfo.directed);
-		let passed = (Date.now() - timeInfo.from) / 1000 + playing.elapsed;
+		let passed = (getDateNow() - timeInfo.from) / 1000 + playing.elapsed;
 
 		timeText[playing.id] = formatSeconds(timeInfo.duration - passed);
 
@@ -409,7 +413,7 @@ export default function Game() {
 		// 	return ;
 		// 	// return Date.now();
 		// };
-		socket.emit('move', { from: from, to: to, promotion: promotion, start: Date.now() + parseInt(localStorage.getItem('unix-offset')) });
+		socket.emit('move', { from: from, to: to, promotion: promotion, start: getDateNow() });
 	};
 
 	const onSquareClick = (position) => {
