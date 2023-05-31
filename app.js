@@ -5,6 +5,7 @@ const { Chess } = require('chess.js');
 // TODO: Handle same browser login
 // TODO: Add game spectating
 // TODO: Add game board preview from lobby and board maximization/magnification
+
 const colors = {
 	'w': 'White',
 	'b': 'Black',
@@ -238,6 +239,7 @@ const getRoomsData = () => {
 				id: id,
 				names: Object.values(data.players),
 				duration: data.duration,
+				board: data.engine.board(),
 			};
 		});
 };
@@ -251,7 +253,14 @@ const informLobby = () => {
 };
 
 const closeRoom = (roomName) => {
-	// If room does not exist
+	let roomId = roomName.split('room.')[1];
+	// Remove room from rooms object
+	if (Object.keys(rooms).includes(roomId)) {
+		delete rooms[roomId];
+	}
+	console.log(`ROOM-ACTIVITY: Deleting room ${roomId} from rooms object`);
+
+	// If room does not exist in socket.io
 	if (
 		!Array.from(io.sockets.adapter.rooms)
 			.map((room) => room[0])
@@ -260,18 +269,12 @@ const closeRoom = (roomName) => {
 		return;
 	}
 
-	let roomId = roomName.split('room.')[1];
-
-	console.log(`ROOM-ACTIVITY: Closing room ${roomId}`);
+	console.log(`ROOM-ACTIVITY: Deleting room ${roomId} from socket.io`);
 
 	Array.from(io.sockets.adapter.rooms.get(roomName)).map((id) => {
 		let user = io.sockets.sockets.get(id);
 		user.leave(roomName);
 	});
-
-	if (Object.keys(rooms).includes(roomId)) {
-		delete rooms[roomId];
-	}
 };
 
 // TODO: Modularize wins
@@ -430,6 +433,7 @@ io.on('connection', (socket) => {
 		// Inform users of updated data
 		room.engine.move(data);
 		informRoom(roomId, false);
+		informLobby();
 
 		console.log(`GAME-ACTIVITY: Player "${socket.id}" has successfully moved in room "${roomId}" as ${colors[player.color].toLowerCase()}`);
 		console.log(

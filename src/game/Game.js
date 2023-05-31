@@ -54,6 +54,7 @@ export default function Game() {
 	const navigate = useNavigate();
 	const [state, _setState] = useState({
 		selected: null,
+		extraSelected: [],
 		legal: [],
 		pieces: [],
 
@@ -237,6 +238,7 @@ export default function Game() {
 
 		let object = {
 			..._state.current,
+			extraSelected: data.last == undefined ? _state.current.extraSelected : [data.last.from, data.last.to],
 			pieces: data.board,
 			legal: data.legal,
 			overlay: data.result.over,
@@ -403,6 +405,7 @@ export default function Game() {
 				overlay: false,
 				highlighted: [],
 				selected: null,
+				extraSelected: [from, to],
 			}
 		);
 
@@ -529,7 +532,7 @@ export default function Game() {
 				object.position = `${'abcdefgh'[_rank]}${_row}`;
 				object.piece = getBoardPieceByNotation(_state.current.pieces, object.position).piece;
 				object.className += shade;
-				if (object.position == state.selected) {
+				if (object.position == state.selected || state.extraSelected.includes(object.position)) {
 					object.className += ' selected';
 				}
 

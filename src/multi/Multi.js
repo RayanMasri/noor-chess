@@ -5,6 +5,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { socket } from '../socket.js';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
+import calculateTextWidth from 'calculate-text-width';
 
 import './Multi.scss';
 
@@ -20,18 +21,83 @@ const times = {
 	'10:00': 600,
 };
 
+const Board = (props) => {
+	return (
+		<div className='preview-board'>
+			{props.board.map((row, rowIndex) => {
+				return (
+					<div className='row'>
+						{row.map((square, index) => {
+							return (
+								<div className={`square ${rowIndex % 2 == 0 ? (index % 2 == 0 ? 'light' : 'dark') : index % 2 == 0 ? 'dark' : 'light'}`}>
+									{square != null ? <img draggable='false' src={require(`../icons/${square.color}${square.type}.svg`)}></img> : null}
+								</div>
+							);
+						})}
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
 const Room = (props) => {
+	let white_index = 0;
+	let black_index = 0;
+	if (props.room.names.length > 1) {
+		white_index = props.room.names.findIndex((user) => user.color == 'w');
+		black_index = white_index == 0 ? 1 : 0;
+	}
+
+	console.log(calculateTextWidth(props.room.names[0].name, 'normal 20px'));
+	console.log(calculateTextWidth(props.room.names[black_index].name, 'normal 20px Arial'));
+	console.log(calculateTextWidth(props.room.names[white_index].name, 'normal 20px Arial'));
 	return (
 		<div className='room'>
 			<div className='top'>
 				<div className='inner'>
-					<div>
-						{props.room.names.length < 2
-							? `Owner: ${props.room.names[0].name} (${colors[props.room.names[0].color]}) `
-							: `${props.room.names[0].name} (${colors[props.room.names[0].color]})\nvs\n${props.room.names[1].name} (${colors[props.room.names[1].color]}) `.split('\n').map((line) => {
-									return <div>{line}</div>;
-							  })}
-					</div>
+					{props.room.names.length < 2 ? (
+						<div className='players'>
+							<div className='player'>
+								<div>{props.room.names[0].name}</div>
+								<div
+									className='color'
+									style={{
+										position: 'absolute',
+										right: `-${calculateTextWidth(colors[props.room.names[0].color], 'normal 12px Arial')}px`,
+									}}
+								>
+									{colors[props.room.names[0].color]}
+								</div>
+							</div>
+						</div>
+					) : (
+						<div className='players'>
+							<div className='player'>
+								<div>{props.room.names[black_index].name}</div>
+								<div
+									className='color'
+									style={{
+										right: `-${calculateTextWidth(colors[props.room.names[black_index].color], 'normal 12px Arial')}px`,
+									}}
+								>
+									{colors[props.room.names[black_index].color]}
+								</div>
+							</div>
+							<div>vs</div>
+							<div className='player'>
+								<div>{props.room.names[white_index].name}</div>
+								<div
+									className='color'
+									style={{
+										right: `-${calculateTextWidth(colors[props.room.names[white_index].color], 'normal 12px Arial')}px`,
+									}}
+								>
+									{colors[props.room.names[white_index].color]}
+								</div>
+							</div>
+						</div>
+					)}
 					<div
 						style={{
 							textAlign: 'right',
@@ -39,7 +105,8 @@ const Room = (props) => {
 					>{`Time: ${props.room.duration / 60}:00`}</div>
 				</div>
 
-				<img src={require('../icons/chess-board.svg').default}></img>
+				<Board board={props.room.board} />
+				{/* <img src={require('../icons/chess-board.svg').default}></img> */}
 			</div>
 
 			<Button className='join-btn' disabled={props.room.names.length > 1 || props.room.id == props.createId} onClick={props.onJoin}>
@@ -56,6 +123,113 @@ export default function Multi(props) {
 		createId: '',
 		joinError: '',
 		game: false,
+		// rooms: [
+		// 	{
+		// 		'id': 'IBW0y7mabd',
+		// 		'names': [{ 'name': 'consoleas', 'color': 'w', 'elapsed': 0 }],
+		// 		'duration': 300,
+		// 		'board': [
+		// 			[
+		// 				{ 'square': 'a8', 'type': 'r', 'color': 'b' },
+		// 				{ 'square': 'b8', 'type': 'n', 'color': 'b' },
+		// 				{ 'square': 'c8', 'type': 'b', 'color': 'b' },
+		// 				{ 'square': 'd8', 'type': 'q', 'color': 'b' },
+		// 				{ 'square': 'e8', 'type': 'k', 'color': 'b' },
+		// 				{ 'square': 'f8', 'type': 'b', 'color': 'b' },
+		// 				{ 'square': 'g8', 'type': 'n', 'color': 'b' },
+		// 				{ 'square': 'h8', 'type': 'r', 'color': 'b' },
+		// 			],
+		// 			[
+		// 				{ 'square': 'a7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'b7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'c7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'd7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'e7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'f7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'g7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'h7', 'type': 'p', 'color': 'b' },
+		// 			],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[
+		// 				{ 'square': 'a2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'b2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'c2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'd2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'e2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'f2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'g2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'h2', 'type': 'p', 'color': 'w' },
+		// 			],
+		// 			[
+		// 				{ 'square': 'a1', 'type': 'r', 'color': 'w' },
+		// 				{ 'square': 'b1', 'type': 'n', 'color': 'w' },
+		// 				{ 'square': 'c1', 'type': 'b', 'color': 'w' },
+		// 				{ 'square': 'd1', 'type': 'q', 'color': 'w' },
+		// 				{ 'square': 'e1', 'type': 'k', 'color': 'w' },
+		// 				{ 'square': 'f1', 'type': 'b', 'color': 'w' },
+		// 				{ 'square': 'g1', 'type': 'n', 'color': 'w' },
+		// 				{ 'square': 'h1', 'type': 'r', 'color': 'w' },
+		// 			],
+		// 		],
+		// 	},
+		// 	{
+		// 		'id': 'IBW0y7mabd',
+		// 		'names': [
+		// 			{ 'name': 'consoleas', 'color': 'w', 'elapsed': 0 },
+		// 			{ 'name': 'consoleas', 'color': 'b', 'elapsed': 0 },
+		// 		],
+		// 		'duration': 300,
+		// 		'board': [
+		// 			[
+		// 				{ 'square': 'a8', 'type': 'r', 'color': 'b' },
+		// 				{ 'square': 'b8', 'type': 'n', 'color': 'b' },
+		// 				{ 'square': 'c8', 'type': 'b', 'color': 'b' },
+		// 				{ 'square': 'd8', 'type': 'q', 'color': 'b' },
+		// 				{ 'square': 'e8', 'type': 'k', 'color': 'b' },
+		// 				{ 'square': 'f8', 'type': 'b', 'color': 'b' },
+		// 				{ 'square': 'g8', 'type': 'n', 'color': 'b' },
+		// 				{ 'square': 'h8', 'type': 'r', 'color': 'b' },
+		// 			],
+		// 			[
+		// 				{ 'square': 'a7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'b7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'c7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'd7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'e7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'f7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'g7', 'type': 'p', 'color': 'b' },
+		// 				{ 'square': 'h7', 'type': 'p', 'color': 'b' },
+		// 			],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[null, null, null, null, null, null, null, null],
+		// 			[
+		// 				{ 'square': 'a2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'b2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'c2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'd2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'e2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'f2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'g2', 'type': 'p', 'color': 'w' },
+		// 				{ 'square': 'h2', 'type': 'p', 'color': 'w' },
+		// 			],
+		// 			[
+		// 				{ 'square': 'a1', 'type': 'r', 'color': 'w' },
+		// 				{ 'square': 'b1', 'type': 'n', 'color': 'w' },
+		// 				{ 'square': 'c1', 'type': 'b', 'color': 'w' },
+		// 				{ 'square': 'd1', 'type': 'q', 'color': 'w' },
+		// 				{ 'square': 'e1', 'type': 'k', 'color': 'w' },
+		// 				{ 'square': 'f1', 'type': 'b', 'color': 'w' },
+		// 				{ 'square': 'g1', 'type': 'n', 'color': 'w' },
+		// 				{ 'square': 'h1', 'type': 'r', 'color': 'w' },
+		// 			],
+		// 		],
+		// 	},
+		// ],
 		rooms: [],
 		color: 'w',
 		time: '5:00',
@@ -69,8 +243,7 @@ export default function Multi(props) {
 	const navigate = useNavigate();
 
 	const onRoomsUpdate = (data) => {
-		// console.log(`Lobby update:`);
-		// console.log(data);
+		console.log(JSON.stringify(data));
 		setState({
 			..._state.current,
 			rooms: data,
