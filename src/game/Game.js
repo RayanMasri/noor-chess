@@ -57,7 +57,7 @@ export default function Game() {
 		extraSelected: [],
 		legal: [],
 		pieces: [],
-
+		premove: { from: null, to: null },
 		highlighted: [],
 		overlay: false,
 		waitPromote: { status: false, offset: 0, from: null, to: null },
@@ -249,6 +249,7 @@ export default function Game() {
 			turn: data.turn,
 			gameResult: data.result,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
+			premove: { from: null, to: null },
 		};
 
 		if (_state.current.timeInterval != null) clearInterval(_state.current.timeInterval);
@@ -281,6 +282,24 @@ export default function Game() {
 		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
 
 		console.log(`ANIMATION: Server-side ${data.last.from} -> ${data.last.to}, current animation: ${JSON.stringify(_state.current.animation)}`);
+		if (_state.current.premove.from != null) {
+			let legal = data.legal.filter((move) => move.from == _state.current.premove.from && move.to == _state.current.premove.to);
+
+			console.log(legal);
+			if (legal.length != 0) {
+				let premove = Object.assign({}, _state.current.premove);
+
+				setState(object);
+				setTimeout(() => {
+					if (legal.length > 1) {
+						requestPromotion(premove.from, premove.to);
+					} else {
+						sendMove(premove.from, premove.to);
+					}
+				}, 10);
+			}
+		}
+
 		createAnimation(data.last, object);
 	};
 
@@ -371,7 +390,7 @@ export default function Game() {
 	const requestPromotion = (from, to) => {
 		// console.log('set staet proomotin');
 		setState({
-			...state,
+			..._state.current,
 			overlay: true,
 			waitPromote: { status: true, offset: (_state.current.color == 'w' ? 'abcdefgh' : 'hgfedcba').indexOf(to.split('')[0]) * state.cellSize, from: from, to: to },
 			highlighted: [],
@@ -426,23 +445,33 @@ export default function Game() {
 	};
 
 	const onClick = (position, piece) => {
-		// if (state.moving.status) return;
-
-		// console.log(`PIECE CLICK`);
-		// console.log(`onClick event`);
-		let start = Date.now();
 		let hasPiece = piece != null;
-		// console.log(`Clicked on ${position} with piece object: ${piece}, has piece: ${hasPiece} (${Date.now() - start} ms)`);
 
+		// If it's not our turn,
 		if (state.turn != state.color) {
+			// Check if clicked square has a same-color piece
 			if (hasPiece && piece.color == state.color) {
+				// Preview all possible moves for that singular piece
 				setState({
 					..._state.current,
 					selected: position,
 					highlighted: getPieceLegalMoves(position, piece.type, piece.color),
+					premove: { from: null, to: null },
 				});
 			} else {
-				if (state.selected != null) setState({ ...state, highlighted: [], selected: null });
+				// Otherwise, check if a square is selected, and the move is within highlighted squares
+				if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
+					// Queue a premove
+					setState({
+						..._state.current,
+						selected: null,
+						highlighted: [],
+						premove: { from: _state.current.selected, to: position },
+					});
+				} else {
+					// Otherwise, remove all highlighted & selected squares
+					if (state.selected != null) setState({ ...state, highlighted: [], selected: null, premove: { from: null, to: null } });
+				}
 			}
 
 			return;
@@ -532,6 +561,7 @@ export default function Game() {
 				object.position = `${'abcdefgh'[_rank]}${_row}`;
 				object.piece = getBoardPieceByNotation(_state.current.pieces, object.position).piece;
 				object.className += shade;
+				object.className += Object.values(_state.current.premove).includes(object.position) ? ' premove' : '';
 				if (object.position == state.selected || state.extraSelected.includes(object.position)) {
 					object.className += ' selected';
 				}

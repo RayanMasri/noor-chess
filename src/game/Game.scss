@@ -309,6 +309,12 @@ $board-size: 640px;
 	.square.selected.light {
 		background-color: #f8ec5a;
 	}
+	.square.premove.dark {
+		background-color: #f18173;
+	}
+	.square.premove.light {
+		background-color: #d4594a;
+	}
 
 	.promotion-column {
 		width: $board-size / 8;
