@@ -486,6 +486,8 @@ io.on('connection', (socket) => {
 		// Remove all one-player non-started rooms under this socket
 		destroyCreated(socket.id);
 
+		// data.name = (Math.random() * 100).toString();
+
 		let code = generateRoom(socket.id, data.name || '???', data.color, data.time);
 		console.log(`ROOM-ACTIVITY: User "${socket.id}" has successfully created room "${code}"`);
 

@@ -9,6 +9,8 @@ import calculateTextWidth from 'calculate-text-width';
 
 import './Multi.scss';
 
+// TODO: Add sophisticated settigns
+
 let colors = {
 	'w': 'White',
 	'b': 'Black',
@@ -49,9 +51,6 @@ const Room = (props) => {
 		black_index = white_index == 0 ? 1 : 0;
 	}
 
-	console.log(calculateTextWidth(props.room.names[0].name, 'normal 20px'));
-	console.log(calculateTextWidth(props.room.names[black_index].name, 'normal 20px Arial'));
-	console.log(calculateTextWidth(props.room.names[white_index].name, 'normal 20px Arial'));
 	return (
 		<div className='room'>
 			<div className='top'>
@@ -322,42 +321,46 @@ export default function Multi(props) {
 		<div id='multi' className='page'>
 			<div id='sidebar'>
 				{/* <TextField label='Name' variant='outlined' style={{ marginTop: '20px' }} /> */}
-				<Input
-					placeholder='Name'
-					style={{ marginTop: '20px', padding: '12px' }}
-					value={state.name}
-					onChange={(event) => {
-						let value = event.target.value.match(/[a-zA-Z0-9]+/g).join('');
+				<div className='out-container'>
+					<Input
+						placeholder='Name'
+						style={{ marginTop: '20px', padding: '12px' }}
+						value={state.name}
+						onChange={(event) => {
+							let value = event.target.value.match(/[a-zA-Z0-9]+/g).join('');
 
-						localStorage.setItem('name', value);
+							localStorage.setItem('name', value);
 
-						setState({
-							...state,
-							name: value,
-						});
-					}}
-				/>
+							setState({
+								...state,
+								name: value,
+							});
+						}}
+					/>
+				</div>
 				<Divider />
-				<Button
-					style={{ backgroundColor: '#266308' }}
-					onClick={() => {
-						if (state.joinId == '') return;
-						onJoin(state.joinId);
-					}}
-				>
-					Join
-				</Button>
-				<Input
-					placeholder='ID...'
-					style={{ marginTop: '10px' }}
-					value={state.joinId}
-					onChange={(event) => {
-						setState({
-							...state,
-							joinId: event.target.value,
-						});
-					}}
-				/>
+				<div className='btn-group btn-group-join'>
+					<Button
+						style={{ backgroundColor: '#266308' }}
+						onClick={() => {
+							if (state.joinId == '') return;
+							onJoin(state.joinId);
+						}}
+					>
+						Join
+					</Button>
+					<Input
+						placeholder='ID...'
+						value={state.joinId}
+						onChange={(event) => {
+							setState({
+								...state,
+								joinId: event.target.value,
+							});
+						}}
+					/>
+				</div>
+
 				<div
 					className='error'
 					style={{
@@ -368,56 +371,63 @@ export default function Multi(props) {
 				</div>
 
 				<Divider />
-				<div className='options'>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'w' })} className={state.color == 'w' ? 'selected' : ''}>
-						White
+				<div className='btn-group btn-group-create'>
+					<Button style={{ backgroundColor: '#266308' }} onClick={onCreate}>
+						Create
 					</Button>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'b' })} className={state.color == 'b' ? 'selected' : ''}>
-						Black
-					</Button>
-				</div>
-				<div className='options'>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '1:00' })} className={state.time == '1:00' ? 'selected' : ''}>
-						1:00
-					</Button>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '3:00' })} className={state.time == '3:00' ? 'selected' : ''}>
-						3:00
-					</Button>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '5:00' })} className={state.time == '5:00' ? 'selected' : ''}>
-						5:00
-					</Button>
-					<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '10:00' })} className={state.time == '10:00' ? 'selected' : ''}>
-						10:00
-					</Button>
-				</div>
-				<Button style={{ backgroundColor: '#266308' }} onClick={onCreate}>
-					Create
-				</Button>
-				<div
-					id='created'
-					style={{
-						display: state.createId == '' ? 'none' : 'flex',
-					}}
-				>
-					<div id='code'>
-						<div>{state.createId}</div>
-
-						<IconButton
-							style={{ marginLeft: '2px' }}
-							onClick={() => {
-								navigator.clipboard.writeText(state.createId);
-							}}
-						>
-							<ContentCopyIcon
-								sx={{
-									width: '16px',
-									height: '16px',
-									color: 'green',
-								}}
-							/>
-						</IconButton>
+					<div className='option-group'>
+						<div className='options'>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'w' })} className={state.color == 'w' ? 'selected' : ''}>
+								White
+							</Button>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, color: 'b' })} className={state.color == 'b' ? 'selected' : ''}>
+								Black
+							</Button>
+						</div>
+						<div className='options'>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '1:00' })} className={state.time == '1:00' ? 'selected' : ''}>
+								1:00
+							</Button>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '3:00' })} className={state.time == '3:00' ? 'selected' : ''}>
+								3:00
+							</Button>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '5:00' })} className={state.time == '5:00' ? 'selected' : ''}>
+								5:00
+							</Button>
+							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '10:00' })} className={state.time == '10:00' ? 'selected' : ''}>
+								10:00
+							</Button>
+						</div>
 					</div>
-					<div id='players'>Waiting...</div>
+				</div>
+
+				<div className='out-container'>
+					<div
+						id='created'
+						style={{
+							display: state.createId == '' ? 'none' : 'flex',
+						}}
+					>
+						<div id='code'>
+							<div>{state.createId}</div>
+
+							<IconButton
+								style={{ marginLeft: '2px' }}
+								onClick={() => {
+									navigator.clipboard.writeText(state.createId);
+								}}
+							>
+								<ContentCopyIcon
+									sx={{
+										width: '16px',
+										height: '16px',
+										color: 'green',
+									}}
+								/>
+							</IconButton>
+						</div>
+						<div id='players'>Waiting...</div>
+					</div>
 				</div>
 			</div>
 			<div id='rooms'>

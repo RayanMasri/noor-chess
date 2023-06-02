@@ -19,6 +19,7 @@ const engine = new Chess();
 // console.log(engine.moves({ verbose: true }));
 
 // FIXME: Cancel all animations that arrive at the same destination when creating a new animation
+// FIXME: Fix promotion column offseted in smaller screen
 
 // TODO: Add resignation
 // TODO: Cancel animation on promotion

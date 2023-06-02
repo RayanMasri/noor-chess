@@ -33,13 +33,16 @@ $board-size: 96px;
 	}
 
 	#rooms {
-		overflow-y: scroll;
-		width: 100%;
+		overflow-y: auto;
+		// overflow-x: hidden;
+		// width: 100%;
+		flex-grow: 1;
 		padding: 10px 0px 0px 10px;
 		display: grid;
 
 		grid-template-rows: repeat(4, max-content);
 		grid-template-columns: repeat(4, max-content);
+
 		column-gap: 10px;
 		row-gap: 10px;
 
@@ -132,13 +135,15 @@ $board-size: 96px;
 		flex-direction: column;
 		justify-content: flex-start;
 		align-items: center;
+		box-sizing: border-box;
 
 		.options {
-			width: 90%;
+			width: 100%;
 			display: flex;
 			flex-direction: row;
 			justify-content: space-between;
-			margin-bottom: 10px;
+			box-sizing: border-box;
+			margin-top: 10px;
 		}
 
 		.options > .MuiButton-root {
@@ -156,7 +161,7 @@ $board-size: 96px;
 		}
 
 		#created {
-			width: 90%;
+			width: 100%;
 			background-color: white;
 			height: max-content;
 			display: flex;
@@ -177,6 +182,51 @@ $board-size: 96px;
 				height: max-content;
 			}
 		}
+
+		.btn-group {
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			flex-direction: column;
+			align-items: center;
+			box-sizing: border-box;
+			padding: 0px 10px 0px 10px;
+		}
+
+		.btn-group-join > div:last-child {
+			margin-top: 10px;
+		}
+
+		// .btn-group-create > :not(:last-child) {
+		// 	margin-bottom: 10px;
+		// }
+
+		.btn-group-create > .option-group {
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-direction: column;
+			box-sizing: border-box;
+		}
+	}
+
+	@media only screen and (max-width: 1790px) {
+		#rooms {
+			grid-template-columns: repeat(3, max-content);
+		}
+	}
+
+	@media only screen and (max-width: 1509px) {
+		#rooms {
+			grid-template-columns: repeat(2, max-content);
+		}
+	}
+
+	@media only screen and (max-width: 1150px) {
+		#rooms {
+			grid-template-columns: repeat(1, max-content);
+		}
 	}
 
 	.MuiTextField-root {
@@ -184,7 +234,7 @@ $board-size: 96px;
 	}
 
 	.MuiButton-root {
-		width: 90%;
+		width: 100%;
 		font-size: 20px;
 		color: white;
 		text-transform: none;
@@ -204,9 +254,17 @@ $board-size: 96px;
 		margin: 20px 0px 20px 0px;
 	}
 
+	.out-container {
+		width: 100%;
+		padding: 0px 10px 0px 10px;
+		box-sizing: border-box;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
 	.MuiInput-root {
 		background-color: white;
-		width: 90%;
+		width: 100%;
 		border-radius: 4px;
 		padding: 3px 5px 3px 5px;
 	}
@@ -216,5 +274,78 @@ $board-size: 96px;
 		text-align: left;
 		color: red;
 		margin-top: 5px;
+	}
+}
+
+@media only screen and (max-width: 800px) {
+	#multi {
+		flex-direction: column-reverse;
+
+		#rooms {
+			overflow-y: auto;
+			// overflow-x: hidden;
+			// width: 100%;
+			// flex-grow: 1;
+			// padding: 10px 0px 0px 10px;
+			display: flex;
+			flex-direction: column;
+			padding: 10px 10px 0px 10px;
+			box-sizing: border-box;
+
+			align-items: center;
+			justify-content: flex-start;
+
+			row-gap: 0px;
+			column-gap: 0px;
+
+			// grid-template-rows: repeat(4, max-content);
+			// grid-template-columns: repeat(4, max-content);
+
+			// column-gap: 10px;
+			// row-gap: 10px;
+			.room {
+				margin-bottom: 10px;
+			}
+		}
+
+		#sidebar {
+			width: 100%;
+			height: max-content;
+			padding-bottom: 10px;
+
+			// background-color: #2b2b2b;
+			// width: 400px;
+			// height: 100%;
+
+			// display: flex;
+			// flex-direction: column;
+			// justify-content: flex-start;
+			// align-items: center;
+			// box-sizing: border-box;
+
+			.btn-group-join {
+				flex-direction: row;
+				padding: 0px 10px 0px 10px;
+			}
+
+			.btn-group-join > .MuiButton-root {
+				width: 200px;
+				margin-right: 10px;
+				height: 100%;
+			}
+
+			.btn-group-join > div:last-child {
+				// margin-top: 0px;
+				margin: 0px;
+				height: 100%;
+			}
+
+			.btn-group-create > .option-group {
+				padding: 0px;
+			}
+			// .btn-group-create > .option-group > .options:first-child {
+			// 	margin-top: 0px;
+			// }
+		}
 	}
 }
