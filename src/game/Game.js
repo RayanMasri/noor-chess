@@ -20,6 +20,7 @@ const engine = new Chess();
 
 // FIXME: Cancel all animations that arrive at the same destination when creating a new animation
 // FIXME: Fix promotion column offseted in smaller screen
+// FIXME: Can't premove on same color pieces
 
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
@@ -450,24 +451,24 @@ export default function Game() {
 
 		// If it's not our turn,
 		if (state.turn != state.color) {
-			// Check if clicked square has a same-color piece
-			if (hasPiece && piece.color == state.color) {
-				// Preview all possible moves for that singular piece
+			// Check if a square is selected, and the move is within highlighted squares
+			if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
+				// Queue a premove
 				setState({
 					..._state.current,
-					selected: position,
-					highlighted: getPieceLegalMoves(position, piece.type, piece.color),
-					premove: { from: null, to: null },
+					selected: null,
+					highlighted: [],
+					premove: { from: _state.current.selected, to: position },
 				});
 			} else {
-				// Otherwise, check if a square is selected, and the move is within highlighted squares
-				if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
-					// Queue a premove
+				// Check if clicked square has a same-color piece
+				if (hasPiece && piece.color == state.color) {
+					// Preview all possible moves for that singular piece
 					setState({
 						..._state.current,
-						selected: null,
-						highlighted: [],
-						premove: { from: _state.current.selected, to: position },
+						selected: position,
+						highlighted: getPieceLegalMoves(position, piece.type, piece.color),
+						premove: { from: null, to: null },
 					});
 				} else {
 					// Otherwise, remove all highlighted & selected squares
