@@ -120,6 +120,7 @@ const getBoardUpdateObject = (engine, room, playerData) => {
 			};
 		}),
 		turn: engine.turn(),
+		check: engine.inCheck(),
 		result: { over: false, result: null },
 	};
 };

@@ -28,10 +28,13 @@ const Board = (props) => {
 		<div className='preview-board'>
 			{props.board.map((row, rowIndex) => {
 				return (
-					<div className='row'>
+					<div className='row' key={`board-row-${rowIndex}-${props.id}`}>
 						{row.map((square, index) => {
 							return (
-								<div className={`square ${rowIndex % 2 == 0 ? (index % 2 == 0 ? 'light' : 'dark') : index % 2 == 0 ? 'dark' : 'light'}`}>
+								<div
+									className={`square ${rowIndex % 2 == 0 ? (index % 2 == 0 ? 'light' : 'dark') : index % 2 == 0 ? 'dark' : 'light'}`}
+									key={`board-row-${rowIndex}-item-${index}-${props.id}`}
+								>
 									{square != null ? <img draggable='false' src={require(`../icons/${square.color}${square.type}.svg`)}></img> : null}
 								</div>
 							);
@@ -104,7 +107,7 @@ const Room = (props) => {
 					>{`Time: ${props.room.duration / 60}:00`}</div>
 				</div>
 
-				<Board board={props.room.board} />
+				<Board board={props.room.board} id={props.room.id} />
 				{/* <img src={require('../icons/chess-board.svg').default}></img> */}
 			</div>
 
@@ -242,7 +245,6 @@ export default function Multi(props) {
 	const navigate = useNavigate();
 
 	const onRoomsUpdate = (data) => {
-		console.log(JSON.stringify(data));
 		setState({
 			..._state.current,
 			rooms: data,
@@ -432,9 +434,9 @@ export default function Multi(props) {
 			</div>
 			<div id='rooms'>
 				{state.rooms.map((room) => {
-					console.log(room);
 					return (
 						<Room
+							key={`room-${room.id}`}
 							room={room}
 							createId={state.createId}
 							onJoin={() => {

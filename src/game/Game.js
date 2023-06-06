@@ -22,6 +22,9 @@ const engine = new Chess();
 // FIXME: Fix promotion column offseted in smaller screen
 // FIXME: Can't premove on same color pieces
 
+// TODO: Add check indicator
+// background: radial-gradient(ellipse at center, rgb(255, 0, 0) 0%, rgb(231, 0, 0) 25%, rgba(169, 0, 0, 0) 89%, rgba(158, 0, 0, 0) 100%)
+// TODO: Add audio
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
 
@@ -35,8 +38,10 @@ const engine = new Chess();
 // FIXME: Prevent updated time text to be greater than current time text
 // FIXME: Sudden involuntarily client-side disconnections occuring from one user
 // FIXME: Some rooms don't disappear when all user leave
+// FIXME: Attempt to prevent any animation lag
 
 const animationTime = 0.25; // in seconds
+// const animationTime = 15; // in seconds
 
 class Board {
 	constructor(props) {
@@ -68,6 +73,8 @@ export default function Game() {
 		animationTimeout: null,
 		animations: [],
 		color: 'w',
+		turn: 'w',
+		check: false,
 		// players: ['Loading...', 'Loading...'], // (dev)
 		players: [],
 		gameResult: { over: false, reason: null },
@@ -181,19 +188,28 @@ export default function Game() {
 	// On finish animation, restore to
 
 	const createAnimation = (latest, object = null) => {
-		if (_state.current.animationTimeout) clearTimeout(_state.current.animationTimeout);
-
 		let id = uuidv4();
+
+		if (_state.current.animationTimeout) {
+			console.log(`ANIMATION-PROCESS (${id}): Requested animation has overriden current timeout`);
+			clearTimeout(_state.current.animationTimeout);
+		}
+		if (_state.current.animation != null) {
+			console.log(`ANIMATION-PROCESS (${id}): An animation is currently present: ${JSON.stringify(_state.current.animation)}`);
+		}
 
 		setState({
 			...(object || _state.current),
 			animation: { status: true, from: latest.from, to: latest.to, id: id, captured: latest.captured, color: latest.color },
 		});
 
+		console.log(`ANIMATION-PROCESS (${id}): Waiting for state to initialize animation`);
 		setTimeout(() => {
 			if (_state.current.animation == null) return;
 			if (_state.current.animation.id != id) return;
 
+			console.log(`ANIMATION-PROCESS (${id}): Animation has begun, waiting ${animationTime * 1000}ms for animation to finish`);
+			let start = Date.now();
 			setState({
 				..._state.current,
 				animation: {
@@ -201,6 +217,7 @@ export default function Game() {
 					status: false,
 				},
 				animationTimeout: setTimeout(() => {
+					console.log(`ANIMATION-PROCESS (${id}): Animation has ended, clearing all animations from state (elapsed: ${Date.now() - start}ms)`);
 					setState({
 						..._state.current,
 						animation: null,
@@ -249,6 +266,7 @@ export default function Game() {
 			// time: data.times,
 			players: data.players,
 			turn: data.turn,
+			check: data.check,
 			gameResult: data.result,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
 			premove: { from: null, to: null },
@@ -283,7 +301,7 @@ export default function Game() {
 
 		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
 
-		console.log(`ANIMATION: Server-side ${data.last.from} -> ${data.last.to}, current animation: ${JSON.stringify(_state.current.animation)}`);
+		console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
 		if (_state.current.premove.from != null) {
 			let legal = data.legal.filter((move) => move.from == _state.current.premove.from && move.to == _state.current.premove.to);
 
@@ -326,7 +344,7 @@ export default function Game() {
 			delete copied.board;
 			console.log(`SERVER-RECEIVE: Board update occured with data: ${JSON.stringify(copied)}`);
 			console.log(
-				`TIME: Showing elapsed time & intended time strings for each user:\n${data.timeInfo.players
+				`TIME: Showing elapsed time & intended time strings for each user (current offset is ${localStorage.getItem('unix-offset')}ms):\n${data.timeInfo.players
 					.map((player) => {
 						return `${player.id} (${data.players.find((_player) => _player.id == player.id).name}) - ${player.elapsed}s > ${formatSeconds(data.timeInfo.duration - player.elapsed)}`;
 					})
@@ -416,7 +434,7 @@ export default function Game() {
 		board[toRow][toRank].square = to;
 		board[fromRow][fromRank] = null;
 
-		console.log(`ANIMATION: Client-side ${from} -> ${to}, current animation: ${JSON.stringify(_state.current.animation)}`);
+		console.log(`ANIMATION-REQUEST-CLIENT: ${from} -> ${to}`);
 		createAnimation(
 			{ from: from, to: to, captured: captured != null ? captured.piece : null, color: state.color },
 			{
@@ -427,6 +445,7 @@ export default function Game() {
 				highlighted: [],
 				selected: null,
 				extraSelected: [from, to],
+				turn: state.color == 'w' ? 'b' : 'w',
 			}
 		);
 
@@ -564,6 +583,11 @@ export default function Game() {
 				object.piece = getBoardPieceByNotation(_state.current.pieces, object.position).piece;
 				object.className += shade;
 				object.className += Object.values(_state.current.premove).includes(object.position) ? ' premove' : '';
+
+				if (state.check && object.piece != null && object.piece.type == 'k' && object.piece.color == state.turn) {
+					object.className += ' checked';
+				}
+
 				if (object.position == state.selected || state.extraSelected.includes(object.position)) {
 					object.className += ' selected';
 				}
