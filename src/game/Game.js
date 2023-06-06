@@ -75,13 +75,13 @@ export default function Game() {
 		color: 'w',
 		turn: 'w',
 		check: false,
-		// players: ['Loading...', 'Loading...'], // (dev)
 		players: [],
 		gameResult: { over: false, reason: null },
 		cellSize: 80,
 		name: '',
 		timeInterval: null,
 		timeText: {}, // [<player>, <opponent>]
+		timeInfo: {},
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -227,16 +227,20 @@ export default function Game() {
 		}, 10); // See a solution for this
 	};
 
-	const logAnimations = (animations) => {
-		return animations.map((a) => `${a.from}-${a.to}`).join(', ');
-	};
-
 	const formatSeconds = (seconds) => {
 		seconds = Math.max(0, seconds); // Clamp seconds to always be positive
 		let minutes = Math.floor(seconds / 60);
 		seconds = Math.floor(seconds - minutes * 60);
+		minutes = minutes.toString().padStart(2, '0');
 		seconds = seconds.toString().padStart(2, '0');
 		return `${minutes}:${seconds}`;
+	};
+
+	const parseFormatted = (formatted) => {
+		let [minutes, seconds] = formatted.split(':');
+		minutes = parseInt(minutes) * 60;
+		seconds = parseInt(seconds);
+		return minutes + seconds;
 	};
 
 	const calculateGameTime = (timeInfo) => {
@@ -270,6 +274,7 @@ export default function Game() {
 			gameResult: data.result,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
 			premove: { from: null, to: null },
+			timeInfo: data.timeInfo,
 		};
 
 		if (_state.current.timeInterval != null) clearInterval(_state.current.timeInterval);
@@ -758,54 +763,76 @@ export default function Game() {
 					<div id='footer'>{state.turn == 'b' ? "Black's turn" : "White's turn"}</div>
 				</div>
 				<div id='right' className='side'>
-					<div className='control'>
-						<div className='piece-log'>
-							{/* {'ppppppppqkbbnnrr'
-								.split('')
-								.map((piece) => `b${piece}`)
-								.map((name) => {
-									return <img src={require(`../icons/${name}.svg`)}></img>;
-								})} */}
-							{Object.entries(calculateScores())
-								.map(([key, value]) => {
-									if (value.dominance == state.color || value.dominance == null) return;
+					{state.players.length > 0 ? (
+						<div className='control'>
+							<div className='piece-log'>
+								{Object.entries(calculateScores())
+									.map(([key, value]) => {
+										if (value.dominance == state.color || value.dominance == null) return;
 
-									let pieces = [];
-									for (let i = 0; i < value.occurences; i++) {
-										pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
-									}
-									return pieces;
-								})
-								.flat()
-								.filter((e) => e)}
-						</div>
-						{state.players.length > 0 ? (
+										let pieces = [];
+										for (let i = 0; i < value.occurences; i++) {
+											pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
+										}
+										return pieces;
+									})
+									.flat()
+									.filter((e) => e)}
+							</div>
+							<div className='timer top'>
+								{/* 05<div>:</div>00 */}
+								{state.timeText[state.players.find((player) => player.id != socket.id).id]}
+							</div>
 							<div className='inner'>
+								{(() => {
+									console.log((parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100);
+									console.log(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]));
+									console.log(state.timeInfo.duration);
+								})()}
+								<div
+									className='progress-bar top'
+									style={{
+										width: `${(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100}%`,
+									}}
+								>
+									&nbsp;
+								</div>
 								<div className='name'>
 									<div>{state.players.find((player) => player.id != socket.id).name}</div>
-									<div>{state.timeText[state.players.find((player) => player.id != socket.id).id]}</div>
 								</div>
 								<Divider style={{ width: '100%', backgroundColor: 'white' }} />
 								<div className='name'>
 									<div>{state.name}</div>
-									<div>{state.timeText[socket.id]}</div>
+								</div>
+								<div
+									className='progress-bar bottom'
+									style={{
+										width: `${(parseFormatted(state.timeText[socket.id]) / state.timeInfo.duration) * 100}%`,
+									}}
+								>
+									&nbsp;
 								</div>
 							</div>
-						) : null}
-						<div className='piece-log'>
-							{Object.entries(calculateScores())
-								.map(([key, value]) => {
-									if (value.dominance != state.color || value.dominance == null) return;
-									let pieces = [];
-									for (let i = 0; i < value.occurences; i++) {
-										pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
-									}
-									return pieces;
-								})
-								.flat()
-								.filter((e) => e)}
+							<div className='timer bottom'>
+								{/* 05<div>:</div>00 */}
+								{state.timeText[socket.id]}
+							</div>
+
+							<div className='piece-log'>
+								{Object.entries(calculateScores())
+									.map(([key, value]) => {
+										if (value.dominance != state.color || value.dominance == null) return;
+										let pieces = [];
+										for (let i = 0; i < value.occurences; i++) {
+											pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
+										}
+										return pieces;
+									})
+									.flat()
+									.filter((e) => e)}
+							</div>
 						</div>
-					</div>
+					) : null}
 				</div>
 			</div>
 		</div>
