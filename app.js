@@ -32,7 +32,7 @@ const generateRoom = (creator, name, color, time) => {
 	rooms[code] = {
 		started: false,
 		ended: false,
-		engine: new Chess(),
+		engine: new Chess('rnbqkbnr/ppp1pppp/8/8/8/8/PPPPQPPP/RNB1KBNR w KQkq - 0 1'),
 		timeout: null,
 		duration: time, // Seconds
 		time: {

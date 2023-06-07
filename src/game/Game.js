@@ -22,8 +22,11 @@ const engine = new Chess();
 // FIXME: Fix promotion column offseted in smaller screen
 // FIXME: Can't premove on same color pieces
 
+// FIXME: When checks are relieved, indicators swap to the opponent's king for a split second (*)
+// FIXME: A 10-minute game ended due to timeout after only ~10s passed
+// FIXME: Prevent user to idle in /game page due to error
+
 // TODO: Add check indicator
-// background: radial-gradient(ellipse at center, rgb(255, 0, 0) 0%, rgb(231, 0, 0) 25%, rgba(169, 0, 0, 0) 89%, rgba(158, 0, 0, 0) 100%)
 // TODO: Add audio
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
@@ -72,6 +75,7 @@ export default function Game() {
 		animation: null,
 		animationTimeout: null,
 		animations: [],
+		animationPath: null,
 		color: 'w',
 		turn: 'w',
 		check: false,
@@ -170,10 +174,10 @@ export default function Game() {
 
 	const location = useLocation();
 
-	// useEffect(() => {
-	// console.log(`State changed to:`);
-	// console.log(state);
-	// }, [state]);
+	useEffect(() => {
+		console.log(`State changed to:`);
+		console.log(state);
+	}, [state]);
 
 	const getBoardPieceByNotation = (board, notation) => {
 		let [rank, row] = notation.split('');
@@ -262,6 +266,7 @@ export default function Game() {
 		let object = {
 			..._state.current,
 			extraSelected: data.last == undefined ? _state.current.extraSelected : [data.last.from, data.last.to],
+			animationPath: data.last == undefined ? _state.current.animationPath : { from: data.last.from, to: data.last.to },
 			pieces: data.board,
 			legal: data.legal,
 			overlay: data.result.over,
@@ -304,7 +309,8 @@ export default function Game() {
 
 		if (data.last == undefined) return setState(object);
 
-		if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
+		// if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
+		if (_state.current.animationPath != null && _state.current.animationPath.from == data.last.from && _state.current.animationPath.to == data.last.to) return setState(object);
 
 		console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
 		if (_state.current.premove.from != null) {
@@ -404,6 +410,10 @@ export default function Game() {
 			});
 		});
 
+		// socket.emit('confirm-connection', (response) => {
+		// console.log(response)
+		// })
+
 		if (location.state == null) return;
 		onUpdateBoard(location.state, location.state.color, location.state.name);
 	}, []);
@@ -445,11 +455,13 @@ export default function Game() {
 			{
 				..._state.current,
 				pieces: board,
+				animationPath: { from: from, to: to },
 				waitPromote: { status: false, offset: 0, from: null, to: null },
 				overlay: false,
 				highlighted: [],
 				selected: null,
 				extraSelected: [from, to],
+				check: false,
 				turn: state.color == 'w' ? 'b' : 'w',
 			}
 		);
@@ -590,6 +602,8 @@ export default function Game() {
 				object.className += Object.values(_state.current.premove).includes(object.position) ? ' premove' : '';
 
 				if (state.check && object.piece != null && object.piece.type == 'k' && object.piece.color == state.turn) {
+					console.log(`Check occured for king piece of color "${object.piece.color}" during turn of "${state.turn}"`);
+
 					object.className += ' checked';
 				}
 
@@ -784,11 +798,6 @@ export default function Game() {
 								{state.timeText[state.players.find((player) => player.id != socket.id).id]}
 							</div>
 							<div className='inner'>
-								{(() => {
-									console.log((parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100);
-									console.log(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]));
-									console.log(state.timeInfo.duration);
-								})()}
 								<div
 									className='progress-bar top'
 									style={{
