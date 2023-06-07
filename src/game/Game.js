@@ -25,6 +25,7 @@ const engine = new Chess();
 // FIXME: When checks are relieved, indicators swap to the opponent's king for a split second (*)
 // FIXME: A 10-minute game ended due to timeout after only ~10s passed
 // FIXME: Prevent user to idle in /game page due to error
+// FIXME: Castling highlight circles aren't visible, try merging all possible moves
 
 // TODO: Add check indicator
 // TODO: Add audio
@@ -41,7 +42,7 @@ const engine = new Chess();
 // FIXME: Prevent updated time text to be greater than current time text
 // FIXME: Sudden involuntarily client-side disconnections occuring from one user
 // FIXME: Some rooms don't disappear when all user leave
-// FIXME: Attempt to prevent any animation lag
+// FIXME: Attempt to prevent any animation lag (*)
 
 const animationTime = 0.25; // in seconds
 // const animationTime = 15; // in seconds
@@ -67,6 +68,7 @@ export default function Game() {
 		extraSelected: [],
 		legal: [],
 		pieces: [],
+		fen: '',
 		premove: { from: null, to: null },
 		highlighted: [],
 		overlay: false,
@@ -147,18 +149,30 @@ export default function Game() {
 		return `${rank}${row}`;
 	};
 
-	const getPieceLegalMoves = (notation, piece, color) => {
+	const getPieceLegalMoves = (_notation, piece, color) => {
 		// notation = 'd1';
 		// piece = 'q';
 		// color = 'w';
+		let notation = _notation;
 		if (color == 'b') {
 			notation = flipNotation(notation);
 		}
+
+		// console.log(_state.current.fen);
+		// console.log(edited_fen.join(' '));
+
+		let edited_fen = _state.current.fen.split(' ');
+		edited_fen[1] = color;
+		edited_fen = edited_fen.join(' ');
+
+		engine.load(edited_fen);
+		let real = engine.moves({ square: _notation, verbose: true }).map((item) => item.to);
 
 		engine.clear();
 		engine.put({ type: piece, color: 'w' }, notation);
 
 		let legals = engine.moves({ square: notation, verbose: true }).map((item) => item.to);
+
 		// Diagonal capture
 		if (piece == 'p') {
 			legals.push(transformNotation(notation, -1, 1));
@@ -168,6 +182,8 @@ export default function Game() {
 		if (color == 'b') {
 			legals = legals.map((item) => flipNotation(item));
 		}
+
+		legals = legals.concat(real).flat();
 
 		return legals.filter((item, index) => legals.indexOf(item) == index); // Filter duplicates to ignore promotion possibilities
 	};
@@ -271,6 +287,7 @@ export default function Game() {
 			animationPath: data.last == undefined ? _state.current.animationPath : { from: data.last.from, to: data.last.to },
 			pieces: data.board,
 			legal: data.legal,
+			fen: data.fen,
 			overlay: data.result.over,
 			color: color != undefined ? color : _state.current.color,
 			name: name != undefined ? name : _state.current.name,
@@ -488,7 +505,7 @@ export default function Game() {
 		let hasPiece = piece != null;
 
 		// If it's not our turn,
-		if (state.turn != state.color) {
+		if (_state.current.turn != _state.current.color) {
 			// Check if a square is selected, and the move is within highlighted squares
 			if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
 				// Queue a premove
@@ -510,7 +527,7 @@ export default function Game() {
 					});
 				} else {
 					// Otherwise, remove all highlighted & selected squares
-					if (state.selected != null) setState({ ...state, highlighted: [], selected: null, premove: { from: null, to: null } });
+					setState({ ..._state.current, highlighted: [], selected: null, premove: { from: null, to: null } });
 				}
 			}
 
@@ -551,6 +568,7 @@ export default function Game() {
 			return;
 		}
 
+		console.log(state.legal);
 		let highlighted = state.legal.filter((move) => move.from == position).map((move) => move.to);
 		// console.log(`Selected piece has ${highlighted.length} legal move(s), highlighting all... (${Date.now() - start} ms)`);
 
