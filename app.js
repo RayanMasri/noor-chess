@@ -32,9 +32,10 @@ const generateRoom = (creator, name, color, time) => {
 	rooms[code] = {
 		started: false,
 		ended: false,
-		engine: new Chess('rnbqkbnr/ppp1pppp/8/8/8/8/PPPPQPPP/RNB1KBNR w KQkq - 0 1'),
+		engine: new Chess(),
 		timeout: null,
 		duration: time, // Seconds
+		initial: null,
 		time: {
 			from: null, // Date to count down from
 			directed: null, // Id of socket that has a turn
@@ -137,6 +138,11 @@ const timerLose = (playerId) => {
 	// Stop if game has already ended
 	if (getEngineResult(room.engine).over) return console.log(`GAME-ACTIVITY: Failed to timer lose player "${playerId}": game has ended`);
 
+	// Ensure the correct duration has passed
+	if ((Date.now() - room.initial) / 1000 < room.duration) {
+		return console.log(`GAME-ACTIVITY: Failed to timer lose player "${playerId}": total game time does not exceed duration (${(Date.now() - room.initial) / 1000}/${room.duration}s)`);
+	}
+
 	// Update board with new defeated data
 	Object.entries(room.players).map(([userId, data]) => {
 		let engine = room.engine;
@@ -197,6 +203,7 @@ const initializeRoom = (id) => {
 
 	// Start room
 	rooms[id].started = true;
+	rooms[id].initial = Date.now();
 
 	// Force all players out of lobby room
 	Object.keys(rooms[id].players).map((id) => {
@@ -389,6 +396,10 @@ io.on('connection', (socket) => {
 		socket.join('lobby');
 
 		callback(getRoomsData());
+	});
+
+	socket.on('confirm-connection', (callback) => {
+		callback(Array.from(io.sockets.adapter.rooms).filter((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(socket.id)).length > 0);
 	});
 
 	socket.on('move', (data) => {

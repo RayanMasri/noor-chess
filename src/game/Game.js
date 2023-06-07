@@ -174,10 +174,10 @@ export default function Game() {
 
 	const location = useLocation();
 
-	useEffect(() => {
-		console.log(`State changed to:`);
-		console.log(state);
-	}, [state]);
+	// useEffect(() => {
+	// 	console.log(`State changed to:`);
+	// 	console.log(state);
+	// }, [state]);
 
 	const getBoardPieceByNotation = (board, notation) => {
 		let [rank, row] = notation.split('');
@@ -241,6 +241,8 @@ export default function Game() {
 	};
 
 	const parseFormatted = (formatted) => {
+		if (formatted == undefined) return 0;
+
 		let [minutes, seconds] = formatted.split(':');
 		minutes = parseInt(minutes) * 60;
 		seconds = parseInt(seconds);
@@ -410,9 +412,9 @@ export default function Game() {
 			});
 		});
 
-		// socket.emit('confirm-connection', (response) => {
-		// console.log(response)
-		// })
+		socket.emit('confirm-connection', (response) => {
+			if (!response) navigate('/multiplayer');
+		});
 
 		if (location.state == null) return;
 		onUpdateBoard(location.state, location.state.color, location.state.name);
