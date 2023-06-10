@@ -6,7 +6,7 @@
 		top: 0;
 		left: 0;
 		position: fixed;
-		justify-content: space-between;
+		justify-content: center;
 		align-items: center;
 		flex-direction: row;
 		padding: 20px;
@@ -55,6 +55,10 @@
 		}
 	}
 
+	.mode:first-child {
+		margin-right: 10px;
+	}
+
 	@media only screen and (max-width: 1460px) {
 		.mode {
 			width: 47.9vw;
@@ -75,6 +79,7 @@
 
 		.mode:first-child {
 			margin-top: 10px;
+			margin-right: 0px;
 		}
 
 		.mode > .title {

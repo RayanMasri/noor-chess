@@ -3,6 +3,7 @@ import { socket } from '../socket.js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IconButton, Divider } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { useMediaPredicate } from 'react-media-hook';
 import { v4 as uuidv4 } from 'uuid';
 import './Game.scss';
 import { Chess } from 'chess.js';
@@ -429,9 +430,10 @@ export default function Game() {
 			});
 		});
 
-		socket.emit('confirm-connection', (response) => {
-			if (!response) navigate('/multiplayer');
-		});
+		// FIXME:
+		// socket.emit('confirm-connection', (response) => {
+		// 	if (!response) navigate('/multiplayer');
+		// });
 
 		if (location.state == null) return;
 		onUpdateBoard(location.state, location.state.color, location.state.name);
@@ -666,9 +668,39 @@ export default function Game() {
 		}
 	};
 
+	const mobile = useMediaPredicate('(max-width: 1520px)');
+
 	return (
 		<div id='game' className='page'>
 			<div id='main'>
+				<div id='left' className='side'>
+					{state.players.length > 0 && mobile ? (
+						<div className='control'>
+							<div className='timer top'>
+								{/* 05<div>:</div>00 */}
+								{state.timeText[state.players.find((player) => player.id != socket.id).id]}
+							</div>
+							<div className='inner'>
+								<div className='name'>
+									<div>{state.players.find((player) => player.id != socket.id).name}</div>
+								</div>
+								<div className='piece-log'>
+									{Object.entries(calculateScores())
+										.map(([key, value]) => {
+											if (value.dominance != state.color || value.dominance == null) return;
+											let pieces = [];
+											for (let i = 0; i < value.occurences; i++) {
+												pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
+											}
+											return pieces;
+										})
+										.flat()
+										.filter((e) => e)}
+								</div>
+							</div>
+						</div>
+					) : null}
+				</div>
 				<div id='center'>
 					<div id='header'>
 						<IconButton
@@ -681,7 +713,7 @@ export default function Game() {
 						>
 							<ExitToAppIcon sx={{ color: 'white' }} />
 						</IconButton>
-						<div>{state.players.map((player) => player.name).join(' vs ')}</div>
+						<div>{state.turn == 'b' ? "Black's turn" : "White's turn"}</div>
 					</div>
 					<div id='outer-board'>
 						<div
@@ -794,73 +826,101 @@ export default function Game() {
 							{state.gameResult.reason}
 						</div>
 					</div>
-					<div id='footer'>{state.turn == 'b' ? "Black's turn" : "White's turn"}</div>
 				</div>
 				<div id='right' className='side'>
 					{state.players.length > 0 ? (
-						<div className='control'>
-							<div className='piece-log'>
-								{Object.entries(calculateScores())
-									.map(([key, value]) => {
-										if (value.dominance == state.color || value.dominance == null) return;
+						!mobile ? (
+							<div className='control'>
+								<div className='piece-log'>
+									{Object.entries(calculateScores())
+										.map(([key, value]) => {
+											if (value.dominance == state.color || value.dominance == null) return;
 
-										let pieces = [];
-										for (let i = 0; i < value.occurences; i++) {
-											pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
-										}
-										return pieces;
-									})
-									.flat()
-									.filter((e) => e)}
-							</div>
-							<div className='timer top'>
-								{/* 05<div>:</div>00 */}
-								{state.timeText[state.players.find((player) => player.id != socket.id).id]}
-							</div>
-							<div className='inner'>
-								<div
-									className='progress-bar top'
-									style={{
-										width: `${(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100}%`,
-									}}
-								>
-									&nbsp;
+											let pieces = [];
+											for (let i = 0; i < value.occurences; i++) {
+												pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
+											}
+											return pieces;
+										})
+										.flat()
+										.filter((e) => e)}
 								</div>
-								<div className='name'>
-									<div>{state.players.find((player) => player.id != socket.id).name}</div>
+								<div className='timer top'>
+									{/* 05<div>:</div>00 */}
+									{state.timeText[state.players.find((player) => player.id != socket.id).id]}
 								</div>
-								<Divider style={{ width: '100%', backgroundColor: 'white' }} />
-								<div className='name'>
-									<div>{state.name}</div>
+								<div className='inner'>
+									<div
+										className='progress-bar top'
+										style={{
+											width: `${(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100}%`,
+										}}
+									>
+										&nbsp;
+									</div>
+									<div className='name'>
+										<div>{state.players.find((player) => player.id != socket.id).name}</div>
+									</div>
+									<Divider style={{ width: '100%', backgroundColor: 'white' }} />
+									<div className='name'>
+										<div>{state.name}</div>
+									</div>
+									<div
+										className='progress-bar bottom'
+										style={{
+											width: `${(parseFormatted(state.timeText[socket.id]) / state.timeInfo.duration) * 100}%`,
+										}}
+									>
+										&nbsp;
+									</div>
 								</div>
-								<div
-									className='progress-bar bottom'
-									style={{
-										width: `${(parseFormatted(state.timeText[socket.id]) / state.timeInfo.duration) * 100}%`,
-									}}
-								>
-									&nbsp;
+								<div className='timer bottom'>
+									{/* 05<div>:</div>00 */}
+									{state.timeText[socket.id]}
 								</div>
-							</div>
-							<div className='timer bottom'>
-								{/* 05<div>:</div>00 */}
-								{state.timeText[socket.id]}
-							</div>
 
-							<div className='piece-log'>
-								{Object.entries(calculateScores())
-									.map(([key, value]) => {
-										if (value.dominance != state.color || value.dominance == null) return;
-										let pieces = [];
-										for (let i = 0; i < value.occurences; i++) {
-											pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
-										}
-										return pieces;
-									})
-									.flat()
-									.filter((e) => e)}
+								<div className='piece-log'>
+									{Object.entries(calculateScores())
+										.map(([key, value]) => {
+											if (value.dominance != state.color || value.dominance == null) return;
+											let pieces = [];
+											for (let i = 0; i < value.occurences; i++) {
+												pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
+											}
+											return pieces;
+										})
+										.flat()
+										.filter((e) => e)}
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className='control'>
+								<div className='timer bottom'>
+									{/* 05<div>:</div>00 */}
+									{state.timeText[socket.id]}
+								</div>
+
+								<div className='inner'>
+									<div className='name'>
+										<div>{state.name}</div>
+									</div>
+									<div className='piece-log'>
+										{Object.entries(calculateScores())
+											.map(([key, value]) => {
+												if (value.dominance == state.color || value.dominance == null) return;
+
+												let pieces = [];
+												for (let i = 0; i < value.occurences; i++) {
+													pieces.push(<img src={require(`../icons/${state.color}${key}.svg`)}></img>);
+												}
+												return pieces;
+											})
+											.flat()
+											.filter((e) => e)}
+									</div>
+								</div>
+							</div>
+						)
 					) : null}
 				</div>
 			</div>
