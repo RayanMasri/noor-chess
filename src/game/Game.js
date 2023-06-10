@@ -33,6 +33,14 @@ const engine = new Chess();
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
 
+// TODO: Adding multiple consecutive premoves requires:
+// - Board manipulation to display premoved pieces
+// - Assiging paths for individual pieces
+// - Closing paths that have been interrupted by other premoves from separate paths
+// - Preventing all premove paths if an illegal premove occurs after the opponent's move
+// - Hiding the from piece in the earliest premove in a path
+// - Replacing the to piece in the latest premove in a path in the board
+
 // FIXME: Timer 2 second delay bug, issue might be client-side with the 1-second interval
 // FIXME: When "move" emits are delayed, the delay is added to the player's timer, which isn't correct,
 // Possible fixes:
@@ -71,6 +79,7 @@ export default function Game() {
 		pieces: [],
 		fen: '',
 		premove: { from: null, to: null },
+		premoves: [],
 		highlighted: [],
 		overlay: false,
 		waitPromote: { status: false, offset: 0, from: null, to: null },
@@ -299,6 +308,7 @@ export default function Game() {
 			gameResult: data.result,
 			cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
 			premove: { from: null, to: null },
+			premoves: [],
 			timeInfo: data.timeInfo,
 		};
 
@@ -333,13 +343,12 @@ export default function Game() {
 		if (_state.current.animationPath != null && _state.current.animationPath.from == data.last.from && _state.current.animationPath.to == data.last.to) return setState(object);
 
 		console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
-		if (_state.current.premove.from != null) {
-			let legal = data.legal.filter((move) => move.from == _state.current.premove.from && move.to == _state.current.premove.to);
+		// if (_state.current.premove.from != null) {
+		if (_state.current.premoves.length > 0) {
+			let premove = Object.assign({}, _state.current.premoves[0][0]);
+			let legal = data.legal.filter((move) => move.from == premove.from && move.to == premove.to);
 
-			console.log(legal);
 			if (legal.length != 0) {
-				let premove = Object.assign({}, _state.current.premove);
-
 				setState(object);
 				setTimeout(() => {
 					if (legal.length > 1) {
@@ -508,6 +517,12 @@ export default function Game() {
 
 		// If it's not our turn,
 		if (_state.current.turn != _state.current.color) {
+			// If user has clicked on a premoved piece
+
+			if (_state.current.premoves.map((path) => path.sort((a, b) => a.order - b.order)[0].to).includes(position)) {
+				console.log('Ayo');
+			}
+
 			// Check if a square is selected, and the move is within highlighted squares
 			if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
 				// Queue a premove
@@ -516,6 +531,7 @@ export default function Game() {
 					selected: null,
 					highlighted: [],
 					premove: { from: _state.current.selected, to: position },
+					premoves: [[{ order: 0, from: _state.current.selected, to: position }]],
 				});
 			} else {
 				// Check if clicked square has a same-color piece
@@ -526,10 +542,11 @@ export default function Game() {
 						selected: position,
 						highlighted: getPieceLegalMoves(position, piece.type, piece.color),
 						premove: { from: null, to: null },
+						premoves: [],
 					});
 				} else {
 					// Otherwise, remove all highlighted & selected squares
-					setState({ ..._state.current, highlighted: [], selected: null, premove: { from: null, to: null } });
+					setState({ ..._state.current, highlighted: [], selected: null, premove: { from: null, to: null }, premoves: [] });
 				}
 			}
 
@@ -621,7 +638,14 @@ export default function Game() {
 				object.position = `${'abcdefgh'[_rank]}${_row}`;
 				object.piece = getBoardPieceByNotation(_state.current.pieces, object.position).piece;
 				object.className += shade;
-				object.className += Object.values(_state.current.premove).includes(object.position) ? ' premove' : '';
+				// object.className += Object.values(_state.current.premove).includes(object.position) ? ' premove' : '';
+				object.className += _state.current.premoves
+					.flat()
+					.map((item) => Object.values(item))
+					.flat()
+					.includes(object.position)
+					? ' premove'
+					: '';
 
 				if (state.check && object.piece != null && object.piece.type == 'k' && object.piece.color == state.turn) {
 					console.log(`Check occured for king piece of color "${object.piece.color}" during turn of "${state.turn}"`);
