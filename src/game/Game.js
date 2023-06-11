@@ -54,18 +54,53 @@ const engine = new Chess();
 // FIXME: Attempt to prevent any animation lag (*)
 
 const animationTime = 0.25; // in seconds
-// const animationTime = 15; // in seconds
+// const animationTime = 3; // in seconds
 
 class Board {
-	constructor(props) {
-		this.board = props.board;
+	constructor(board) {
+		this.board = board;
+	}
+
+	get_position(notation) {
+		let [rank, row] = notation.split('');
+		rank = 'abcdefgh'.indexOf(rank);
+		row = 8 - row;
+
+		return [row, rank];
 	}
 
 	// Get piece data at position, e.g: "a8"
-	get(notation) {}
+	get(notation) {
+		let [row, rank] = this.get_position(notation);
+
+		return this.board[row][rank];
+	}
 
 	// Move piece from a position to another, updating it's position property, removing pieces in "from" and replacing all pieces in "to" with "from"
-	move(from, to) {}
+	move(from, to) {
+		let indices = {
+			from: this.get_position(from),
+			to: this.get_position(to),
+		};
+
+		console.log(this.board);
+		console.log(indices);
+
+		this.board[indices.to[0]][indices.to[1]] = this.board[indices.from[0]][indices.from[1]];
+		this.board[indices.to[0]][indices.to[1]].square = to; // ?
+		this.board[indices.from[0]][indices.from[1]] = null;
+	}
+
+	// let board = copyBoard(_state.current.pieces);
+
+	// let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
+	// let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
+
+	// let captured = board[toRow][toRank];
+
+	// board[toRow][toRank] = board[fromRow][fromRank];
+	// board[toRow][toRank].square = to;
+	// board[fromRow][fromRank] = null;
 }
 
 // Once in turn, remove illegal highlights from a pre-highlighted piece
@@ -342,9 +377,10 @@ export default function Game() {
 		// if (_state.current.animation != null && _state.current.animation.from == data.last.from && _state.current.animation.to == data.last.to) return setState(object);
 		if (_state.current.animationPath != null && _state.current.animationPath.from == data.last.from && _state.current.animationPath.to == data.last.to) return setState(object);
 
-		console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
 		// if (_state.current.premove.from != null) {
+		// console.log(_state.current.premoves);
 		if (_state.current.premoves.length > 0) {
+			console.log(`ANIMATION: Premove`);
 			let premove = Object.assign({}, _state.current.premoves[0][0]);
 			let legal = data.legal.filter((move) => move.from == premove.from && move.to == premove.to);
 
@@ -354,13 +390,18 @@ export default function Game() {
 					if (legal.length > 1) {
 						requestPromotion(premove.from, premove.to);
 					} else {
+						// sendMove(premove.from, premove.to, null, false);
 						sendMove(premove.from, premove.to);
 					}
 				}, 10);
 			}
 		}
+		// } else {
+		// FIXME: Add to server on update-board an indicator if last move was a premove so clients can cancel animations
 
+		// console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
 		createAnimation(data.last, object);
+		// }
 	};
 
 	useEffect(() => {
@@ -463,38 +504,46 @@ export default function Game() {
 		});
 	};
 
-	const sendMove = (from, to, promotion = null) => {
+	const sendMove = (from, to, promotion = null, animate = true) => {
 		// Move from client before moving in server
-		let board = copyBoard(_state.current.pieces);
+		let board = new Board(copyBoard(_state.current.pieces));
 
-		let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
-		let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
+		board.move(from, to);
 
-		// board[fromRow][fromRank]
+		// board
 
-		let captured = board[toRow][toRank];
-		// console.log(captured);
+		// let { row: fromRow, rank: fromRank } = getBoardPieceByNotation(board, from);
+		// let { row: toRow, rank: toRank } = getBoardPieceByNotation(board, to);
 
-		board[toRow][toRank] = board[fromRow][fromRank];
-		board[toRow][toRank].square = to;
-		board[fromRow][fromRank] = null;
+		// // board[fromRow][fromRank]
+
+		let captured = board.get(to);
+		// // console.log(captured);
+
+		// board[toRow][toRank] = board[fromRow][fromRank];
+		// board[toRow][toRank].square = to;
+		// board[fromRow][fromRank] = null;
 
 		console.log(`ANIMATION-REQUEST-CLIENT: ${from} -> ${to}`);
-		createAnimation(
-			{ from: from, to: to, captured: captured != null ? captured.piece : null, color: state.color },
-			{
-				..._state.current,
-				pieces: board,
-				animationPath: { from: from, to: to },
-				waitPromote: { status: false, offset: 0, from: null, to: null },
-				overlay: false,
-				highlighted: [],
-				selected: null,
-				extraSelected: [from, to],
-				check: false,
-				turn: state.color == 'w' ? 'b' : 'w',
-			}
-		);
+
+		let object = {
+			..._state.current,
+			pieces: board.board,
+			waitPromote: { status: false, offset: 0, from: null, to: null },
+			overlay: false,
+			highlighted: [],
+			selected: null,
+			extraSelected: [from, to],
+			check: false,
+			turn: state.color == 'w' ? 'b' : 'w',
+			animation: null,
+		};
+
+		if (animate) {
+			createAnimation({ from: from, to: to, captured: captured != null ? captured.piece : null, color: state.color }, { ...object, animationPath: { from: from, to: to } });
+		} else {
+			setState(object);
+		}
 
 		// Move in server
 
@@ -512,6 +561,21 @@ export default function Game() {
 		// console.log(`SQUARE CLICK`);
 	};
 
+	const queuePremove = (from, to) => {
+		// let board = new Board(copyBoard(_state.current.pieces));
+
+		// board.move(from, to);
+
+		setState({
+			..._state.current,
+			selected: null,
+			highlighted: [],
+			// pieces: board.board,
+			// premove: { from: _state.current.selected, to: position },
+			premoves: [[{ order: 0, from: from, to: to }]],
+		});
+	};
+
 	const onClick = (position, piece) => {
 		let hasPiece = piece != null;
 
@@ -526,13 +590,7 @@ export default function Game() {
 			// Check if a square is selected, and the move is within highlighted squares
 			if (_state.current.selected != null && _state.current.highlighted.includes(position)) {
 				// Queue a premove
-				setState({
-					..._state.current,
-					selected: null,
-					highlighted: [],
-					premove: { from: _state.current.selected, to: position },
-					premoves: [[{ order: 0, from: _state.current.selected, to: position }]],
-				});
+				queuePremove(_state.current.selected, position);
 			} else {
 				// Check if clicked square has a same-color piece
 				if (hasPiece && piece.color == state.color) {
@@ -700,10 +758,12 @@ export default function Game() {
 				<div id='left' className='side'>
 					{state.players.length > 0 && mobile ? (
 						<div className='control'>
-							<div className='timer top'>
-								{/* 05<div>:</div>00 */}
-								{state.timeText[state.players.find((player) => player.id != socket.id).id]}
-							</div>
+							{state.timeInfo.duration > 0 ? (
+								<div className='timer top'>
+									{/* 05<div>:</div>00 */}
+									{state.timeText[state.players.find((player) => player.id != socket.id).id]}
+								</div>
+							) : null}
 							<div className='inner'>
 								<div className='name'>
 									<div>{state.players.find((player) => player.id != socket.id).name}</div>
@@ -711,7 +771,7 @@ export default function Game() {
 								<div className='piece-log'>
 									{Object.entries(calculateScores())
 										.map(([key, value]) => {
-											if (value.dominance != state.color || value.dominance == null) return;
+											if (value.dominance == state.color || value.dominance == null) return;
 											let pieces = [];
 											for (let i = 0; i < value.occurences; i++) {
 												pieces.push(<img src={require(`../icons/${state.color == 'w' ? 'b' : 'w'}${key}.svg`)}></img>);
@@ -869,19 +929,23 @@ export default function Game() {
 										.flat()
 										.filter((e) => e)}
 								</div>
-								<div className='timer top'>
-									{/* 05<div>:</div>00 */}
-									{state.timeText[state.players.find((player) => player.id != socket.id).id]}
-								</div>
-								<div className='inner'>
-									<div
-										className='progress-bar top'
-										style={{
-											width: `${(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100}%`,
-										}}
-									>
-										&nbsp;
+								{state.timeInfo.duration > 0 ? (
+									<div className='timer top'>
+										{/* 05<div>:</div>00 */}
+										{state.timeText[state.players.find((player) => player.id != socket.id).id]}
 									</div>
+								) : null}
+								<div className='inner'>
+									{state.timeInfo.duration > 0 ? (
+										<div
+											className='progress-bar top'
+											style={{
+												width: `${(parseFormatted(state.timeText[state.players.find((player) => player.id != socket.id).id]) / state.timeInfo.duration) * 100}%`,
+											}}
+										>
+											&nbsp;
+										</div>
+									) : null}
 									<div className='name'>
 										<div>{state.players.find((player) => player.id != socket.id).name}</div>
 									</div>
@@ -889,19 +953,23 @@ export default function Game() {
 									<div className='name'>
 										<div>{state.name}</div>
 									</div>
-									<div
-										className='progress-bar bottom'
-										style={{
-											width: `${(parseFormatted(state.timeText[socket.id]) / state.timeInfo.duration) * 100}%`,
-										}}
-									>
-										&nbsp;
+									{state.timeInfo.duration > 0 ? (
+										<div
+											className='progress-bar bottom'
+											style={{
+												width: `${(parseFormatted(state.timeText[socket.id]) / state.timeInfo.duration) * 100}%`,
+											}}
+										>
+											&nbsp;
+										</div>
+									) : null}
+								</div>
+								{state.timeInfo.duration > 0 ? (
+									<div className='timer bottom'>
+										{/* 05<div>:</div>00 */}
+										{state.timeText[socket.id]}
 									</div>
-								</div>
-								<div className='timer bottom'>
-									{/* 05<div>:</div>00 */}
-									{state.timeText[socket.id]}
-								</div>
+								) : null}
 
 								<div className='piece-log'>
 									{Object.entries(calculateScores())
@@ -919,10 +987,12 @@ export default function Game() {
 							</div>
 						) : (
 							<div className='control'>
-								<div className='timer bottom'>
-									{/* 05<div>:</div>00 */}
-									{state.timeText[socket.id]}
-								</div>
+								{state.timeInfo.duration > 0 ? (
+									<div className='timer bottom'>
+										{/* 05<div>:</div>00 */}
+										{state.timeText[socket.id]}
+									</div>
+								) : null}
 
 								<div className='inner'>
 									<div className='name'>
@@ -931,7 +1001,7 @@ export default function Game() {
 									<div className='piece-log'>
 										{Object.entries(calculateScores())
 											.map(([key, value]) => {
-												if (value.dominance == state.color || value.dominance == null) return;
+												if (value.dominance != state.color || value.dominance == null) return;
 
 												let pieces = [];
 												for (let i = 0; i < value.occurences; i++) {

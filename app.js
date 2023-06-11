@@ -160,6 +160,7 @@ const timerLose = (playerId) => {
 };
 
 const informRoom = (id, init = false) => {
+	console.log(`Informing room update-board`);
 	Object.entries(rooms[id].players).map(([userId, data]) => {
 		// console.log(userId);
 		// Constant Update Variables:
@@ -197,9 +198,11 @@ const initializeRoom = (id) => {
 	};
 
 	// Create defeat timeout for white
-	rooms[id].timeout = setTimeout(() => {
-		timerLose(white);
-	}, rooms[id].duration * 1000);
+	if (rooms[id].duration > 0) {
+		rooms[id].timeout = setTimeout(() => {
+			timerLose(white);
+		}, rooms[id].duration * 1000);
+	}
 
 	// Start room
 	rooms[id].started = true;
@@ -422,25 +425,27 @@ io.on('connection', (socket) => {
 		let moveLegal = room.engine.moves({ verbose: true }).find((move) => move.from == from && move.to == to) != undefined;
 		if (!moveLegal) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: illegal move`);
 
-		// Clear room timer timeout
-		if (room.timeout != null) clearTimeout(room.timeout);
-
-		// Increase elapsed time for moving player by the subtracted duration from last move or game initialization
-		room.players[socket.id].elapsed = player.elapsed + (date - room.time.from) / 1000;
-
-		// Reset time to this move
-		room.time.from = date;
-
 		// Get opponent ID
 		let opponent = Object.keys(room.players).find((user) => user != socket.id);
 
-		// Direct timer to opponent (their turn)
-		room.time.directed = opponent;
+		if (room.duration > 0) {
+			// Clear room timer timeout
+			if (room.timeout != null) clearTimeout(room.timeout);
 
-		// Create defeat timeout for opponent
-		room.timeout = setTimeout(() => {
-			timerLose(opponent);
-		}, (room.duration - room.players[opponent].elapsed) * 1000);
+			// Increase elapsed time for moving player by the subtracted duration from last move or game initialization
+			room.players[socket.id].elapsed = player.elapsed + (date - room.time.from) / 1000;
+
+			// Reset time to this move
+			room.time.from = date;
+
+			// Direct timer to opponent (their turn)
+			room.time.directed = opponent;
+
+			// Create defeat timeout for opponent
+			room.timeout = setTimeout(() => {
+				timerLose(opponent);
+			}, (room.duration - room.players[opponent].elapsed) * 1000);
+		}
 
 		// Inform users of updated data
 		room.engine.move(data);
@@ -464,7 +469,7 @@ io.on('connection', (socket) => {
 			console.log(`GAME-ACTIVITY: Game of room "${roomId}" has ended, closing room`);
 
 			room.ended = true;
-			clearTimeout(room.timeout);
+			if (room.timeout != null) clearTimeout(room.timeout);
 			Object.keys(room.players).map((id) => {
 				let user = getSocketById(id);
 				user.leave(`room.${roomId}`);

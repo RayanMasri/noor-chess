@@ -21,6 +21,7 @@ const times = {
 	'3:00': 180,
 	'5:00': 300,
 	'10:00': 600,
+	'∞': -1,
 };
 
 const Board = (props) => {
@@ -104,7 +105,9 @@ const Room = (props) => {
 						style={{
 							textAlign: 'right',
 						}}
-					>{`Time: ${props.room.duration / 60}:00`}</div>
+					>
+						{props.room.duration > 0 ? `Time: ${props.room.duration / 60}:00` : `Time: ∞`}
+					</div>
 				</div>
 
 				<Board board={props.room.board} id={props.room.id} />
@@ -387,18 +390,13 @@ export default function Multi(props) {
 							</Button>
 						</div>
 						<div className='options'>
-							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '1:00' })} className={state.time == '1:00' ? 'selected' : ''}>
-								1:00
-							</Button>
-							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '3:00' })} className={state.time == '3:00' ? 'selected' : ''}>
-								3:00
-							</Button>
-							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '5:00' })} className={state.time == '5:00' ? 'selected' : ''}>
-								5:00
-							</Button>
-							<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: '10:00' })} className={state.time == '10:00' ? 'selected' : ''}>
-								10:00
-							</Button>
+							{Object.keys(times).map((time) => {
+								return (
+									<Button style={{ backgroundColor: '#266308' }} onClick={() => setState({ ...state, time: time })} className={state.time == time ? 'selected' : ''}>
+										{time}
+									</Button>
+								);
+							})}
 						</div>
 					</div>
 				</div>
