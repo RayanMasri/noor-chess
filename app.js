@@ -357,7 +357,41 @@ const abandonPlayerRoom = () => {
 
 io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
+
+	console.log('1');
 	console.log(socket.handshake.address);
+	try {
+		console.log('2');
+		console.log(socket.manager.handshaken[socket.id].address);
+	} catch (e) {}
+	try {
+		console.log('3');
+		console.log(socket.request.connection.remoteAddress);
+	} catch (e) {}
+	console.log('4');
+	console.log(socket.handshake.headers);
+	try {
+		console.log('5');
+		console.log(socket.request.connection._peername);
+	} catch (e) {}
+	try {
+		console.log('6');
+		console.log(socket.conn.remoteAddress);
+	} catch (e) {}
+	try {
+		console.log('7');
+		console.log(socket.handshake.headers['x-forwarded-for']);
+	} catch (e) {}
+	try {
+		console.log('8');
+		console.log(socket.handshake.headers['x-real-ip']);
+	} catch (e) {}
+
+	try {
+		console.log('9');
+		console.log(socket.handshake.headers['x-real-port']);
+	} catch (e) {}
+
 	socket.on('sync-unix', (time, callback) => {
 		callback(Date.now() - time);
 	});
