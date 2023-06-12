@@ -28,6 +28,7 @@ const engine = new Chess();
 // FIXME: Prevent user to idle in /game page due to error
 // FIXME: Castling highlight circles aren't visible, try merging all possible moves
 // FIXME: User suddenly leaves game due to transport close error
+// FIXME: Fix awkward piece transition on mobile
 
 // TODO: Add check indicator
 // TODO: Add audio
@@ -54,9 +55,7 @@ const engine = new Chess();
 // FIXME: Some rooms don't disappear when all user leave
 // FIXME: Attempt to prevent any animation lag (*)
 
-const animationTime = 1; // in seconds
-// const animationTime = 0.25; // in seconds
-// const animationTime = 3; // in seconds
+const animationTime = 0.25; // in seconds
 
 class Board {
 	constructor(board) {
