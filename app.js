@@ -192,6 +192,14 @@ const informRoom = (id, init = false) => {
 };
 
 const initializeRoom = (id) => {
+	// Remove all recoveries for all players
+	pending = pending.filter(
+		(recovery) =>
+			!Object.values(rooms[id].players)
+				.map((player) => player.id)
+				.includes(recovery.id)
+	);
+
 	// Start counting time for white player
 	let white = Object.entries(rooms[id].players).find(([id, data]) => data.color == 'w')[0];
 	rooms[id].time = {
@@ -361,10 +369,12 @@ let pending = [];
 let recovery_period = 3000; // If the time of a connection to the latest disconnection is less than this, the user will be reconnected
 
 const attemptRecovery = (ip, socket, callback) => {
-	console.log(pending.map((e) => e.ip));
-
 	let index = pending.findIndex((item) => item.ip == ip);
-	if (index == -1) return;
+	// If no past disconnections, connection is confirmed based upon room presence
+	if (index == -1) {
+		let result = Object.entries(rooms).filter(([id, room]) => Object.keys(room.players).includes(socket.id));
+		return callback(result.length != 0, null);
+	}
 
 	let disconnection = pending[index];
 
@@ -378,7 +388,7 @@ const attemptRecovery = (ip, socket, callback) => {
 
 		// Reconnect to any rooms
 		let result = Object.entries(rooms).filter(([id, room]) => Object.keys(room.players).includes(disconnection.socket));
-		if (result.length == 0) return;
+		if (result.length == 0) return callback(false, null);
 
 		let [id, room] = result[0];
 
@@ -395,18 +405,13 @@ const attemptRecovery = (ip, socket, callback) => {
 
 		socket.join(`room.${id}`);
 
-		// let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
-		informRoom(id, false);
-
-		// if (result == undefined) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: not in room`);
-		// let [roomId, room] = result;
-		callback(true);
+		callback(true, id);
 		return;
 	}
 
 	console.log(`USER-ACTIVITY: Failed to recover, elapsed time (${Date.now() - disconnection.initial}ms) is greater than recovery period (${recovery_period}ms)`);
 	pending.splice(index, 1);
-	callback(false);
+	callback(false, null);
 };
 
 io.on('connection', (socket) => {
@@ -415,7 +420,22 @@ io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
 	socket.on('confirm-connection', (callback) => {
-		attemptRecovery(ip, socket, callback);
+		console.log('Confirm Connection');
+		attemptRecovery(ip, socket, (result, room) => {
+			let data = null;
+
+			if (result && room != null) {
+				data = getBoardUpdateObject(rooms[room].engine, rooms[room], rooms[room].players[socket.id]);
+
+				let result = getEngineResult(rooms[room].engine);
+				data.result = result;
+			}
+
+			callback({
+				result: result,
+				data: data,
+			});
+		});
 		// call
 		// callback(Array.from(io.sockets.adapter.rooms).filter((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(socket.id)).length > 0);
 		// });
@@ -433,6 +453,8 @@ io.on('connection', (socket) => {
 	socket.on('disconnect', (reason) => {
 		console.log(`USER-ACTIVITY: User "${socket.id}" has disconnected from server (${reason})`);
 
+		// FIXME: Don't log disconnections if the user is not currently in a room, and if this is done
+		// remove the automatic recovery removing in the room initialization function
 		pending.push({
 			ip: ip,
 			socket: socket.id,
@@ -443,6 +465,7 @@ io.on('connection', (socket) => {
 			}, recovery_period),
 		});
 
+		console.log(pending);
 		// abandonPlayerRoom(socket.id);
 	});
 
@@ -559,6 +582,8 @@ io.on('connection', (socket) => {
 		if (!validity) return console.log(`ROOM-ACTIVITY: User "${socket.id}" failed to join room "${data.id}"`);
 
 		clearAllRooms(socket);
+
+		// Remove all pending recoveries
 
 		// Remove all one-player non-started rooms under this socket (created rooms)
 		destroyCreated(socket.id);

@@ -54,7 +54,8 @@ const engine = new Chess();
 // FIXME: Some rooms don't disappear when all user leave
 // FIXME: Attempt to prevent any animation lag (*)
 
-const animationTime = 0.25; // in seconds
+const animationTime = 1; // in seconds
+// const animationTime = 0.25; // in seconds
 // const animationTime = 3; // in seconds
 
 class Board {
@@ -324,13 +325,13 @@ export default function Game() {
 		return timeText;
 	};
 
-	const onUpdateBoard = (data, color = undefined, name = undefined) => {
+	const onUpdateBoard = (data, color = undefined, name = undefined, animate = true) => {
+		if (data == null || data == undefined) return;
 		// console.log(`Updating board with data (${color} -> ${color != undefined ? color : _state.current.color}) (${name} -> ${name != undefined ? name : _state.current.name})`);
 
 		let object = {
 			..._state.current,
-			extraSelected: data.last == undefined ? _state.current.extraSelected : [data.last.from, data.last.to],
-			animationPath: data.last == undefined ? _state.current.animationPath : { from: data.last.from, to: data.last.to },
+
 			pieces: data.board,
 			legal: data.legal,
 			fen: data.fen,
@@ -347,6 +348,11 @@ export default function Game() {
 			premoves: [],
 			timeInfo: data.timeInfo,
 		};
+
+		if (data.last != null && data.last != undefined) {
+			object.extraSelected = [data.last.from, data.last.to];
+			object.animationPath = { from: data.last.from, to: data.last.to };
+		}
 
 		if (_state.current.timeInterval != null) clearInterval(_state.current.timeInterval);
 		if (data.result.over) {
@@ -401,7 +407,11 @@ export default function Game() {
 		// FIXME: Add to server on update-board an indicator if last move was a premove so clients can cancel animations
 
 		// console.log(`ANIMATION-REQUEST-SERVER: ${data.last.from} -> ${data.last.to}`);
-		createAnimation(data.last, object);
+		if (animate) {
+			createAnimation(data.last, object);
+		} else {
+			setState(object);
+		}
 		// }
 	};
 
@@ -483,7 +493,28 @@ export default function Game() {
 
 		// FIXME:
 		socket.emit('confirm-connection', (response) => {
-			if (!response) navigate('/multiplayer');
+			console.log(response);
+			if (!response.result) navigate('/multiplayer');
+
+			if (response.data == null || response.data == undefined) return;
+
+			onUpdateBoard(response.data, undefined, undefined, false);
+			// let data = response.data;
+			// setState({
+			// 	..._state.current,
+			// 	extraSelected: data.last == undefined ? _state.current.extraSelected : [data.last.from, data.last.to],
+			// 	animationPath: data.last == undefined ? _state.current.animationPath : { from: data.last.from, to: data.last.to },
+			// 	pieces: data.board,
+			// 	legal: data.legal,
+			// 	fen: data.fen,
+			// 	overlay: data.result.over,
+			// 	players: data.players,
+			// 	turn: data.turn,
+			// 	check: data.check,
+			// 	gameResult: data.result,
+			// 	cellSize: window.innerWidth <= 700 ? (window.innerWidth * 11.42) / 100 : 80,
+			// 	timeInfo: data.timeInfo,
+			// });
 		});
 
 		if (location.state == null) return;
