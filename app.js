@@ -331,9 +331,33 @@ const formatSeconds = (seconds) => {
 	seconds = seconds.toString().padStart(2, '0');
 	return `${minutes}:${seconds}`;
 };
+
+const abandonPlayerRoom = () => {
+	// Find user room
+	let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
+	if (result == undefined) return;
+	let [id, room] = result;
+
+	if (room.ended) return;
+
+	// Inform remaining players of disconnection
+	console.log(`GAME-ACTIVITY: Abandoning remaining players in room "${id}" by user "${socket.id}"`);
+	Object.keys(room.players)
+		.filter((player) => player != socket.id)
+		.map((user) => {
+			io.to(user).emit('disconnection', { reason: 'disconnected', name: room.players[socket.id].name });
+		});
+
+	room.ended = true;
+
+	// Close room
+	closeRoom(`room.${id}`);
+	informLobby();
+};
+
 io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
-
+	console.log(socket.handshake.address);
 	socket.on('sync-unix', (time, callback) => {
 		callback(Date.now() - time);
 	});
@@ -343,29 +367,10 @@ io.on('connection', (socket) => {
 	});
 
 	// Unreceived exit (browser close, refresh, etc...)
-	socket.on('disconnect', () => {
-		console.log(`USER-ACTIVITY: User "${socket.id}" has disconnected from server`);
+	socket.on('disconnect', (reason) => {
+		console.log(`USER-ACTIVITY: User "${socket.id}" has disconnected from server (${reason})`);
 
-		// Find user room
-		let result = Object.entries(rooms).find(([id, room]) => Object.keys(room.players).includes(socket.id));
-		if (result == undefined) return;
-		let [id, room] = result;
-
-		if (room.ended) return;
-
-		// Inform remaining players of disconnection
-		console.log(`GAME-ACTIVITY: Informing remaining players in abandoned room "${id}" by user "${socket.id}"`);
-		Object.keys(room.players)
-			.filter((player) => player != socket.id)
-			.map((user) => {
-				io.to(user).emit('disconnection', { reason: 'disconnected', name: room.players[socket.id].name });
-			});
-
-		room.ended = true;
-
-		// Close room
-		closeRoom(`room.${id}`);
-		informLobby();
+		abandonPlayerRoom(socket.id);
 	});
 
 	// Received exit (through game UI)

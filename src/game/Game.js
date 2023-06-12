@@ -27,6 +27,7 @@ const engine = new Chess();
 // FIXME: A 10-minute game ended due to timeout after only ~10s passed
 // FIXME: Prevent user to idle in /game page due to error
 // FIXME: Castling highlight circles aren't visible, try merging all possible moves
+// FIXME: User suddenly leaves game due to transport close error
 
 // TODO: Add check indicator
 // TODO: Add audio
