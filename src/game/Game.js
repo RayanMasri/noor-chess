@@ -482,9 +482,9 @@ export default function Game() {
 		});
 
 		// FIXME:
-		// socket.emit('confirm-connection', (response) => {
-		// 	if (!response) navigate('/multiplayer');
-		// });
+		socket.emit('confirm-connection', (response) => {
+			if (!response) navigate('/multiplayer');
+		});
 
 		if (location.state == null) return;
 		onUpdateBoard(location.state, location.state.color, location.state.name);
