@@ -360,7 +360,7 @@ const abandonPlayerRoom = (socket) => {
 let pending = [];
 let recovery_period = 3000; // If the time of a connection to the latest disconnection is less than this, the user will be reconnected
 
-const attemptRecovery = (ip, socket) => {
+const attemptRecovery = (ip, socket, callback) => {
 	console.log(pending.map((e) => e.ip));
 
 	let index = pending.findIndex((item) => item.ip == ip);
@@ -400,12 +400,13 @@ const attemptRecovery = (ip, socket) => {
 
 		// if (result == undefined) return console.log(`GAME-ACTIVITY: Player "${socket.id}" failed to move: not in room`);
 		// let [roomId, room] = result;
-
+		callback(true);
 		return;
 	}
 
 	console.log(`USER-ACTIVITY: Failed to recover, elapsed time (${Date.now() - disconnection.initial}ms) is greater than recovery period (${recovery_period}ms)`);
 	pending.splice(index, 1);
+	callback(false);
 };
 
 io.on('connection', (socket) => {
@@ -414,9 +415,10 @@ io.on('connection', (socket) => {
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
 	socket.on('confirm-connection', (callback) => {
-		attemptRecovery(ip, socket);
-
-		callback(Array.from(io.sockets.adapter.rooms).filter((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(socket.id)).length > 0);
+		attemptRecovery(ip, socket, callback);
+		// call
+		// callback(Array.from(io.sockets.adapter.rooms).filter((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(socket.id)).length > 0);
+		// });
 	});
 
 	socket.on('sync-unix', (time, callback) => {
