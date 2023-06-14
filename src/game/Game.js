@@ -30,11 +30,12 @@ const engine = new Chess();
 // FIXME: User suddenly leaves game due to transport close error
 // FIXME: Fix awkward piece transition on mobile
 
-// TODO: Add check indicator
+// TODO: Add check indicator (*)
 // TODO: Add audio
 // TODO: Add resignation
 // TODO: Cancel animation on promotion
-
+// TODO: Replace all chess-related activities in state with one engine
+// TODO: Make animations become functions that transition between boards, instead of single moves
 // TODO: Adding multiple consecutive premoves requires:
 // - Board manipulation to display premoved pieces
 // - Assiging paths for individual pieces
@@ -54,6 +55,14 @@ const engine = new Chess();
 // FIXME: Sudden involuntarily client-side disconnections occuring from one user
 // FIXME: Some rooms don't disappear when all user leave
 // FIXME: Attempt to prevent any animation lag (*)
+
+// FIXME: Piece swapping sometimes, steps to recreate:
+// User 1 (Mobile) creates a game, User 2 join the game, and leaves without exiting
+// User 1 exits game, and creates new game, User 2 accesses website from start and join game
+// User 1 (White) plays first move (e4), refreshes ~3 times, User 2 plays second move (d5)
+// All moves of user 1 have the bug
+// FIXME: Stuttering premove highlight on mobile
+// FIXME: When empty squares are clicked on mobile, a highlight square appears
 
 const animationTime = 0.25; // in seconds
 

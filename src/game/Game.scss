@@ -160,6 +160,16 @@ $board-size: 640px;
 		justify-content: center;
 		align-items: center;
 		margin-left: 400px;
+
+		-webkit-user-select: none; /* Safari */
+		-ms-user-select: none; /* IE 10 and IE 11 */
+		user-select: none; /* Standard syntax */
+	}
+
+	#center * {
+		-webkit-user-select: none; /* Safari */
+		-ms-user-select: none; /* IE 10 and IE 11 */
+		user-select: none; /* Standard syntax */
 	}
 
 	.control {
