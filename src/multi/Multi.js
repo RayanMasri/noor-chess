@@ -169,8 +169,8 @@ export default function Multi(props) {
 		// fetch('http://localhost:9000/db', {
 		let identity = sessionStorage.getItem('identity');
 		if (identity && identity.length > 0) {
-			fetch('http://localhost:9000/db', {
-				// fetch('/db', {
+			// fetch('http://localhost:9000/db', {
+			fetch('/db', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

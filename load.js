@@ -29,14 +29,19 @@ const dbget = async (identity, c_name) => {
 const dbupdate = async (identity, new_elo, c_name) => {
 	// If doesn't exist, return
 	let result = await client.query('SELECT * from users where identity=$1', [identity]);
+	console.log(identity);
+	console.log(new_elo);
+	console.log(result.rows);
 	if (result.rows.length == 0) return;
 
-	await client.query('UPDATE users SET elo=$1 WHERE identity=$2', [identity, new_elo]);
+	await client.query('UPDATE users SET elo=$1 WHERE identity=$2', [new_elo, identity]);
 };
 
 const dbreset = async () => {
 	await client.query('TRUNCATE users;');
 };
+
+// dbreset();
 
 var environment = process.env.NODE_ENV || 'development';
 console.log(`Running express backend in environment: ${environment}`);
@@ -49,12 +54,11 @@ const functions = {
 app.use(cors());
 app.use(bodyParser.json());
 app.post('/db', async (req, res) => {
+	// await dbreset();
 	let { fn, args } = req.body;
 
 	let invoke = functions[fn];
-	console.log('not your business');
 	let result = await invoke(...args);
-	console.log(result);
 
 	res.json(result);
 });

@@ -77,6 +77,7 @@ const enterRoom = (joiner, room, name, color) => {
 const getEngineResult = (engine) => {
 	let over = engine.isGameOver();
 	let reason = null;
+	let winner = '';
 	if (over) {
 		let report = {
 			'Stalemate': engine.isStalemate(),
@@ -89,13 +90,14 @@ const getEngineResult = (engine) => {
 
 		if (engine.isCheckmate()) {
 			reason += `Checkmate - ${engine.turn() == 'w' ? 'Black' : 'White'} has won`;
+			winner = engine.turn();
 		} else {
 			let [name, _] = Object.entries(report).find(([name, result]) => result);
 			reason += name;
 		}
 	}
 
-	return { over: over, reason: reason };
+	return { over: over, reason: reason, winner: winner };
 };
 
 const getBoardUpdateObject = (engine, room, playerData) => {
@@ -442,8 +444,7 @@ const attemptIdentityRecovery = (ip, socket) => {
 };
 
 io.on('connection', (socket) => {
-	// const ip = socket.handshake.headers['true-client-ip'];
-	const ip = Math.random() * 100;
+	const ip = socket.handshake.headers['true-client-ip'];
 
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
 
