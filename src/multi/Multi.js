@@ -128,116 +128,10 @@ export default function Multi(props) {
 		createId: '',
 		joinError: '',
 		game: false,
-		// rooms: [
-		// 	{
-		// 		'id': 'IBW0y7mabd',
-		// 		'names': [{ 'name': 'consoleas', 'color': 'w', 'elapsed': 0 }],
-		// 		'duration': 300,
-		// 		'board': [
-		// 			[
-		// 				{ 'square': 'a8', 'type': 'r', 'color': 'b' },
-		// 				{ 'square': 'b8', 'type': 'n', 'color': 'b' },
-		// 				{ 'square': 'c8', 'type': 'b', 'color': 'b' },
-		// 				{ 'square': 'd8', 'type': 'q', 'color': 'b' },
-		// 				{ 'square': 'e8', 'type': 'k', 'color': 'b' },
-		// 				{ 'square': 'f8', 'type': 'b', 'color': 'b' },
-		// 				{ 'square': 'g8', 'type': 'n', 'color': 'b' },
-		// 				{ 'square': 'h8', 'type': 'r', 'color': 'b' },
-		// 			],
-		// 			[
-		// 				{ 'square': 'a7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'b7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'c7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'd7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'e7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'f7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'g7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'h7', 'type': 'p', 'color': 'b' },
-		// 			],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[
-		// 				{ 'square': 'a2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'b2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'c2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'd2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'e2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'f2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'g2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'h2', 'type': 'p', 'color': 'w' },
-		// 			],
-		// 			[
-		// 				{ 'square': 'a1', 'type': 'r', 'color': 'w' },
-		// 				{ 'square': 'b1', 'type': 'n', 'color': 'w' },
-		// 				{ 'square': 'c1', 'type': 'b', 'color': 'w' },
-		// 				{ 'square': 'd1', 'type': 'q', 'color': 'w' },
-		// 				{ 'square': 'e1', 'type': 'k', 'color': 'w' },
-		// 				{ 'square': 'f1', 'type': 'b', 'color': 'w' },
-		// 				{ 'square': 'g1', 'type': 'n', 'color': 'w' },
-		// 				{ 'square': 'h1', 'type': 'r', 'color': 'w' },
-		// 			],
-		// 		],
-		// 	},
-		// 	{
-		// 		'id': 'IBW0y7mabd',
-		// 		'names': [
-		// 			{ 'name': 'consoleas', 'color': 'w', 'elapsed': 0 },
-		// 			{ 'name': 'consoleas', 'color': 'b', 'elapsed': 0 },
-		// 		],
-		// 		'duration': 300,
-		// 		'board': [
-		// 			[
-		// 				{ 'square': 'a8', 'type': 'r', 'color': 'b' },
-		// 				{ 'square': 'b8', 'type': 'n', 'color': 'b' },
-		// 				{ 'square': 'c8', 'type': 'b', 'color': 'b' },
-		// 				{ 'square': 'd8', 'type': 'q', 'color': 'b' },
-		// 				{ 'square': 'e8', 'type': 'k', 'color': 'b' },
-		// 				{ 'square': 'f8', 'type': 'b', 'color': 'b' },
-		// 				{ 'square': 'g8', 'type': 'n', 'color': 'b' },
-		// 				{ 'square': 'h8', 'type': 'r', 'color': 'b' },
-		// 			],
-		// 			[
-		// 				{ 'square': 'a7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'b7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'c7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'd7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'e7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'f7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'g7', 'type': 'p', 'color': 'b' },
-		// 				{ 'square': 'h7', 'type': 'p', 'color': 'b' },
-		// 			],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[null, null, null, null, null, null, null, null],
-		// 			[
-		// 				{ 'square': 'a2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'b2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'c2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'd2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'e2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'f2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'g2', 'type': 'p', 'color': 'w' },
-		// 				{ 'square': 'h2', 'type': 'p', 'color': 'w' },
-		// 			],
-		// 			[
-		// 				{ 'square': 'a1', 'type': 'r', 'color': 'w' },
-		// 				{ 'square': 'b1', 'type': 'n', 'color': 'w' },
-		// 				{ 'square': 'c1', 'type': 'b', 'color': 'w' },
-		// 				{ 'square': 'd1', 'type': 'q', 'color': 'w' },
-		// 				{ 'square': 'e1', 'type': 'k', 'color': 'w' },
-		// 				{ 'square': 'f1', 'type': 'b', 'color': 'w' },
-		// 				{ 'square': 'g1', 'type': 'n', 'color': 'w' },
-		// 				{ 'square': 'h1', 'type': 'r', 'color': 'w' },
-		// 			],
-		// 		],
-		// 	},
-		// ],
 		rooms: [],
 		color: 'w',
 		time: '5:00',
+		elo: 0,
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -272,37 +166,34 @@ export default function Multi(props) {
 	// }, []);
 
 	useEffect(() => {
-		fetch('/db', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				fn: 'get',
-				args: ['1137419535', '???'],
-			}),
-		}).then((res) => {
-			res.json().then((json) => {
-				console.log(json);
-			});
-		});
 		// fetch('http://localhost:9000/db', {
-		// 	method: 'POST',
-		// 	headers: { 'Content-Type': 'application/json' },
-		// 	body: JSON.stringify({
-		// 		fn: 'get',
-		// 		args: ['1137419535', '???'],
-		// 	}),
-		// }).then((res) => {
-		// 	res.json().then((json) => {
-		// 		console.log(json);
-		// 	});
-		// });
+		let identity = sessionStorage.getItem('identity');
+		if (identity && identity.length > 0) {
+			fetch('http://localhost:9000/db', {
+				// fetch('/db', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					fn: 'get',
+					args: [identity, localStorage.getItem('name')],
+				}),
+			}).then(async (res) => {
+				let json = await res.json();
+				let [name, elo] = json;
+				setState({
+					..._state.current,
+					elo: elo,
+					name: name,
+				});
+			});
+		}
 
 		socket.emit('sync-unix', Date.now(), (offset) => {
 			console.log(`Client to server offset: ${offset}ms`);
 			localStorage.setItem('unix-offset', offset);
 		});
 
-		socket.emit('join-lobby', (data) => {
+		socket.emit('join-lobby', { identity: identity }, (data) => {
 			onRoomsUpdate(data);
 			// console.log(state);
 		});
@@ -315,6 +206,7 @@ export default function Multi(props) {
 		});
 
 		socket.on('start', (data) => {
+			console.log(data);
 			// console.log(data);
 			// console.log(navigate);
 			navigate('/game', {
@@ -454,6 +346,8 @@ export default function Multi(props) {
 						<div id='players'>Waiting...</div>
 					</div>
 				</div>
+
+				<div className='elo'>{state.elo != 0 ? `Elo: ${state.elo}` : ''}</div>
 			</div>
 			<div id='rooms'>
 				{state.rooms.map((room) => {

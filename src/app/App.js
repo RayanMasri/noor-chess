@@ -4,6 +4,8 @@ import Mode from './Mode.js';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import { useNavigate } from 'react-router-dom';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
 
 // FIXME: Offset is increased by one cell for black promotion
 // FIXME: Stroke circle on piece capture highlights pours out of cell *
@@ -27,9 +29,42 @@ import { useNavigate } from 'react-router-dom';
 
 function App() {
 	const navigate = useNavigate();
+	const [state, setState] = useState({
+		identity: undefined,
+	});
+
+	const onSubmit = () => {
+		if (state.identity != undefined) {
+			sessionStorage.setItem('identity', state.identity);
+		} else {
+			sessionStorage.setItem('identity', undefined);
+		}
+		navigate('/multiplayer');
+	};
+
 	return (
 		<div id='app' className='page'>
-			<div id='main'>
+			<div id='main-container'>
+				<TextField
+					label='Identity'
+					variant='outlined'
+					onChange={(event) => {
+						setState({
+							...state,
+							identity: event.target.value,
+						});
+					}}
+					value={state.identity || ''}
+				/>
+				<Button onClick={onSubmit} variant='contained'>
+					Submit
+				</Button>
+			</div>
+
+			{/* onClick={() => {
+						navigate('/multiplayer');
+					}} */}
+			{/* <div id='main'>
 				<Mode title='Local' icon={PersonIcon} onClick={() => {}} />
 				<Mode
 					title='Multiplayer'
@@ -38,7 +73,7 @@ function App() {
 						navigate('/multiplayer');
 					}}
 				/>
-			</div>
+			</div> */}
 		</div>
 	);
 }

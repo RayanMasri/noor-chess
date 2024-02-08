@@ -1,4 +1,13 @@
 #app {
+	height: 100%;
+	width: 100%;
+	top: 0;
+	left: 0;
+	position: fixed;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
 	#main {
 		display: flex;
 		width: 100%;
@@ -13,6 +22,18 @@
 		box-sizing: border-box;
 	}
 
+	#main-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		flex-direction: column;
+		width: 300px;
+	}
+
+	#main-container > * {
+		width: 100%;
+		margin-top: 10px;
+	}
 	// #main > .mode:not(:last-child) {
 	// 	margin-right: 150px;
 	// }

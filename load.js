@@ -56,7 +56,7 @@ app.post('/db', async (req, res) => {
 	let result = await invoke(...args);
 	console.log(result);
 
-	res.send(JSON.stringify(result));
+	res.json(result);
 });
 
 if (environment == 'production') {

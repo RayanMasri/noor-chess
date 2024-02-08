@@ -12,6 +12,8 @@ const colors = {
 };
 
 let rooms = {};
+let identities = {};
+
 const getSocketById = (id) => io.sockets.sockets.get(id);
 
 const makeRoomCode = (length) => {
@@ -188,6 +190,8 @@ const informRoom = (id, init = false, premove = false) => {
 		}
 
 		object.premove = premove;
+
+		object.identities = Object.keys(rooms[id].players).map((user) => identities[user]);
 
 		io.to(userId).emit(init ? 'start' : 'update-board', object);
 	});
@@ -370,6 +374,9 @@ const abandonPlayerRoom = (socket) => {
 let pending = [];
 let recovery_period = 3000; // If the time of a connection to the latest disconnection is less than this, the user will be reconnected
 
+let identity_pending = [];
+let identity_recovery_period = 60000;
+
 const attemptRecovery = (ip, socket, callback) => {
 	let index = pending.findIndex((item) => item.ip == ip);
 	// If no past disconnections, connection is confirmed based upon room presence
@@ -416,10 +423,31 @@ const attemptRecovery = (ip, socket, callback) => {
 	callback(false, null);
 };
 
+const attemptIdentityRecovery = (ip, socket) => {
+	let index = identity_pending.findIndex((item) => item.ip == ip);
+
+	if (index == -1) return;
+
+	let disconnection = identity_pending[index];
+	console.log(`USER-ACTIVITY: Attempting identity recovery from previous disconnection (${ip})`);
+
+	// Recovered succesfully
+	if (Date.now() - disconnection.initial < identity_recovery_period) {
+		console.log(`USER-ACTIVITY: Recovered identity successfully, elapsed time (${Date.now() - disconnection.initial}ms) is less than recovery period (${identity_recovery_period}ms)`);
+
+		let identity = identities[disconnection.socket];
+		delete identities[disconnection.socket];
+		identities[socket.id] = identity;
+	}
+};
+
 io.on('connection', (socket) => {
-	const ip = socket.handshake.headers['true-client-ip'];
+	// const ip = socket.handshake.headers['true-client-ip'];
+	const ip = Math.random() * 100;
 
 	console.log(`USER-ACTIVITY: "${socket.id}" connected`);
+
+	attemptIdentityRecovery(ip, socket);
 
 	socket.on('confirm-connection', (callback) => {
 		console.log('Confirm Connection');
@@ -438,9 +466,6 @@ io.on('connection', (socket) => {
 				data: data,
 			});
 		});
-		// call
-		// callback(Array.from(io.sockets.adapter.rooms).filter((room) => room[0].startsWith('room.') && Array.from(room[1]).includes(socket.id)).length > 0);
-		// });
 	});
 
 	socket.on('sync-unix', (time, callback) => {
@@ -458,8 +483,6 @@ io.on('connection', (socket) => {
 		// FIXME: Don't log disconnections if the user is not currently in a room, and if this is done
 		// remove the automatic recovery removing in the room initialization function
 
-		console.log();
-
 		// If not in any active games
 		if (Object.values(rooms).filter((room) => Object.keys(room.players).includes(socket.id) && room.started).length == 0) {
 			// Immediately abandon previous rooms
@@ -469,6 +492,7 @@ io.on('connection', (socket) => {
 			pending.push({
 				ip: ip,
 				socket: socket.id,
+				identity: identities[socket.id],
 				initial: Date.now(),
 				timeout: setTimeout(() => {
 					console.log(`GAME-ACTIVITY: Abandoning any previous rooms of user "${socket.id}" after ${recovery_period}ms`);
@@ -476,6 +500,12 @@ io.on('connection', (socket) => {
 				}, recovery_period),
 			});
 		}
+
+		identity_pending.push({
+			ip: ip,
+			socket: socket.id,
+			initial: Date.now(),
+		});
 
 		// abandonPlayerRoom(socket.id);
 	});
@@ -506,11 +536,19 @@ io.on('connection', (socket) => {
 		informLobby();
 	});
 
-	socket.on('join-lobby', (callback) => {
+	socket.on('join-lobby', (data, callback) => {
 		console.log(`USER-ACTIVITY: User "${socket.id}" has joined the lobby`);
+
 		socket.join('lobby');
 
 		callback(getRoomsData());
+
+		let { identity } = data;
+		if (identity && identity.length != 0) {
+			identities[socket.id] = identity;
+		} else {
+			identities[socket.id] = null;
+		}
 	});
 
 	socket.on('move', (data) => {
