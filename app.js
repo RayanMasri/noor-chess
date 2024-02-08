@@ -161,7 +161,7 @@ const timerLose = (playerId) => {
 
 // FIXME: When user performs a recovery, dont update entire room, only send current data to that recovered user as a callback in the confirm
 
-const informRoom = (id, init = false) => {
+const informRoom = (id, init = false, premove = false) => {
 	console.log(`Informing room update-board`);
 	Object.entries(rooms[id].players).map(([userId, data]) => {
 		// console.log(userId);
@@ -186,6 +186,8 @@ const informRoom = (id, init = false) => {
 			object.color = data.color;
 			object.name = data.name;
 		}
+
+		object.premove = premove;
 
 		io.to(userId).emit(init ? 'start' : 'update-board', object);
 	});
@@ -455,17 +457,26 @@ io.on('connection', (socket) => {
 
 		// FIXME: Don't log disconnections if the user is not currently in a room, and if this is done
 		// remove the automatic recovery removing in the room initialization function
-		pending.push({
-			ip: ip,
-			socket: socket.id,
-			initial: Date.now(),
-			timeout: setTimeout(() => {
-				console.log(`GAME-ACTIVITY: Abandoning any previous rooms of user "${socket.id}" after ${recovery_period}ms`);
-				abandonPlayerRoom(socket.id);
-			}, recovery_period),
-		});
 
-		console.log(pending);
+		console.log();
+
+		// If not in any active games
+		if (Object.values(rooms).filter((room) => Object.keys(room.players).includes(socket.id) && room.started).length == 0) {
+			// Immediately abandon previous rooms
+			console.log(`GAME-ACTIVITY: Abandoning instantaneously any previous rooms of inactive user "${socket.id}"`);
+			abandonPlayerRoom(socket.id);
+		} else {
+			pending.push({
+				ip: ip,
+				socket: socket.id,
+				initial: Date.now(),
+				timeout: setTimeout(() => {
+					console.log(`GAME-ACTIVITY: Abandoning any previous rooms of user "${socket.id}" after ${recovery_period}ms`);
+					abandonPlayerRoom(socket.id);
+				}, recovery_period),
+			});
+		}
+
 		// abandonPlayerRoom(socket.id);
 	});
 
@@ -546,7 +557,7 @@ io.on('connection', (socket) => {
 
 		// Inform users of updated data
 		room.engine.move(data);
-		informRoom(roomId, false);
+		informRoom(roomId, false, data.premove);
 		informLobby();
 
 		console.log(`GAME-ACTIVITY: Player "${socket.id}" has successfully moved in room "${roomId}" as ${colors[player.color].toLowerCase()}`);

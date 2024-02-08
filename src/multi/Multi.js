@@ -272,6 +272,31 @@ export default function Multi(props) {
 	// }, []);
 
 	useEffect(() => {
+		fetch('/db', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				fn: 'get',
+				args: ['1137419535', '???'],
+			}),
+		}).then((res) => {
+			res.json().then((json) => {
+				console.log(json);
+			});
+		});
+		// fetch('http://localhost:9000/db', {
+		// 	method: 'POST',
+		// 	headers: { 'Content-Type': 'application/json' },
+		// 	body: JSON.stringify({
+		// 		fn: 'get',
+		// 		args: ['1137419535', '???'],
+		// 	}),
+		// }).then((res) => {
+		// 	res.json().then((json) => {
+		// 		console.log(json);
+		// 	});
+		// });
+
 		socket.emit('sync-unix', Date.now(), (offset) => {
 			console.log(`Client to server offset: ${offset}ms`);
 			localStorage.setItem('unix-offset', offset);
