@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import './App.scss';
 import Mode from './Mode.js';
 import PersonIcon from '@mui/icons-material/Person';
@@ -29,22 +29,26 @@ import Button from '@mui/material/Button';
 
 function App() {
 	const navigate = useNavigate();
-	const [state, setState] = useState({
-		identity: undefined,
-	});
+	// const [state, setState] = useState({
+	// 	identity: undefined,
+	// });
 
-	const onSubmit = () => {
-		if (state.identity != undefined) {
-			sessionStorage.setItem('identity', state.identity);
-		} else {
-			sessionStorage.setItem('identity', undefined);
-		}
+	// const onSubmit = () => {
+	// 	if (state.identity != undefined) {
+	// 		sessionStorage.setItem('identity', state.identity);
+	// 	} else {
+	// 		sessionStorage.setItem('identity', undefined);
+	// 	}
+	// 	navigate('/multiplayer');
+	// };
+
+	useEffect(() => {
 		navigate('/multiplayer');
-	};
+	}, []);
 
 	return (
 		<div id='app' className='page'>
-			<div id='main-container'>
+			{/* <div id='main-container'>
 				<TextField
 					label='Identity'
 					variant='outlined'
@@ -59,7 +63,7 @@ function App() {
 				<Button onClick={onSubmit} variant='contained'>
 					Submit
 				</Button>
-			</div>
+			</div> */}
 
 			{/* onClick={() => {
 						navigate('/multiplayer');

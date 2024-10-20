@@ -166,34 +166,12 @@ export default function Multi(props) {
 	// }, []);
 
 	useEffect(() => {
-		// fetch('http://localhost:9000/db', {
-		let identity = sessionStorage.getItem('identity');
-		if (identity && identity.length > 0) {
-			// fetch('http://localhost:9000/db', {
-			fetch('/db', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					fn: 'get',
-					args: [identity, localStorage.getItem('name')],
-				}),
-			}).then(async (res) => {
-				let json = await res.json();
-				let [name, elo] = json;
-				setState({
-					..._state.current,
-					elo: elo,
-					name: name,
-				});
-			});
-		}
-
 		socket.emit('sync-unix', Date.now(), (offset) => {
 			console.log(`Client to server offset: ${offset}ms`);
 			localStorage.setItem('unix-offset', offset);
 		});
 
-		socket.emit('join-lobby', { identity: identity }, (data) => {
+		socket.emit('join-lobby', (data) => {
 			onRoomsUpdate(data);
 			// console.log(state);
 		});

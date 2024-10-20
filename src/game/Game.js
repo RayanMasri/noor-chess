@@ -202,9 +202,6 @@ export default function Game() {
 		timeInterval: null,
 		timeText: {}, // [<player>, <opponent>]
 		timeInfo: {},
-		elos: {},
-		changes: [],
-		identities: [],
 	});
 	const _state = useRef(state);
 	const setState = (data) => {
@@ -340,7 +337,6 @@ export default function Game() {
 			color: color != undefined ? color : _state.current.color,
 			name: name != undefined ? name : _state.current.name,
 			// time: data.times,
-			identities: data.identities,
 			players: data.players,
 			turn: data.turn,
 			check: data.check,
@@ -679,37 +675,6 @@ export default function Game() {
 	const mobile = useMediaPredicate('(max-width: 1520px)');
 
 	useEffect(() => {
-		// setState({
-		// 	...state,
-		// 	identities: location.state.identities
-		// })
-
-		location.state.identities.map((identity) => {
-			if (identity && identity.length != 0) {
-				// fetch('http://localhost:9000/db', {
-				fetch('/db', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						fn: 'get',
-						args: [identity, ''],
-					}),
-				}).then(async (res) => {
-					let json = await res.json();
-					let [name, elo] = json;
-
-					let elos = { ..._state.current.elos };
-
-					elos[identity] = elo;
-
-					setState({
-						..._state.current,
-						elos: elos,
-					});
-				});
-			}
-		});
-
 		window.addEventListener('resize', () => {
 			setState({
 				..._state.current,
@@ -814,59 +779,6 @@ export default function Game() {
 		if (location.state == null) return;
 		onUpdateBoard(location.state, location.state.color, location.state.name);
 	}, []);
-
-	useEffect(() => {
-		if (state.gameResult.over) {
-			let winner = state.gameResult.winner;
-			if (winner == '') {
-				setState({
-					...state,
-					changes: [0, 0],
-				});
-			} else {
-				let elos = Object.values({ ..._state.current.elos });
-				let k = 20;
-				let score = winner == '' ? 0.5 : winner == state.color ? 1 : 0;
-				let added = Math.round(Math.abs(k * (score - 1 / (Math.pow(10, Math.abs(elos[0] - elos[1]) / 400) + 1))));
-
-				setState({
-					...state,
-					changes: [winner == state.color ? added : -added, winner == state.color ? -added : added],
-				});
-				// 600-800 bronze
-				// 800-1000 silver
-				// 1000-1200 gold
-				// 1200-1600 platinum
-				// 1600-2000 titanium
-				// 2000-2400 diamond
-				// 2400-2700 master
-				// 2700+ champion
-
-				let current_identity = sessionStorage.getItem('identity');
-				if (current_identity && current_identity.length != 0 && winner == state.color) {
-					for (let identity of state.identities) {
-						let elo = _state.current.elos[identity];
-
-						if (winner == state.color) {
-							elo += identity == current_identity ? added : -added;
-						} else {
-							elo += identity == current_identity ? -added : added;
-						}
-
-						// fetch('http://localhost:9000/db', {
-						fetch('/db', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({
-								fn: 'update',
-								args: [identity, elo, localStorage.getItem('name')],
-							}),
-						});
-					}
-				}
-			}
-		}
-	}, [JSON.stringify(state.gameResult)]);
 
 	return (
 		<div id='game' className='page'>
@@ -1064,20 +976,10 @@ export default function Game() {
 									) : null}
 									<div className='name'>
 										<div>{state.players.find((player) => player.id != socket.id).name}</div>
-										{Object.keys(state.elos).length == 2 && (
-											<div style={{ marginLeft: 5, color: 'gray' }}>
-												{Object.entries(state.elos).filter((item) => item[0] != sessionStorage.getItem('identity'))[0][1] + (state.changes.length > 0 ? state.changes[1] : 0)}
-											</div>
-										)}
-										{state.changes.length != 0 && <div style={{ color: state.changes[1] > 0 ? 'green' : 'red' }}>{`${state.changes[1] >= 0 ? '+' : ''}${state.changes[1]}`}</div>}
 									</div>
 									<Divider style={{ width: '100%', backgroundColor: 'white' }} />
 									<div className='name'>
 										<div>{state.name}</div>
-										{Object.keys(state.elos).length == 2 && (
-											<div style={{ marginLeft: 5, color: 'gray' }}>{state.elos[sessionStorage.getItem('identity')] + (state.changes.length > 0 ? state.changes[0] : 0)}</div>
-										)}
-										{state.changes.length != 0 && <div style={{ color: state.changes[0] > 0 ? 'green' : 'red' }}>{`${state.changes[0] >= 0 ? '+' : ''}${state.changes[0]}`}</div>}
 									</div>
 									{state.timeInfo.duration > 0 ? (
 										<div

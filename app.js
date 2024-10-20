@@ -537,7 +537,7 @@ io.on('connection', (socket) => {
 		informLobby();
 	});
 
-	socket.on('join-lobby', (data, callback) => {
+	socket.on('join-lobby', (callback) => {
 		console.log(`USER-ACTIVITY: User "${socket.id}" has joined the lobby`);
 
 		socket.join('lobby');
